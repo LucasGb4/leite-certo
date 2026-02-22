@@ -636,15 +636,17 @@ async function saveRecord(){
 
 async function deleteRecord(id){
   if (!confirm('Apagar este registro?')) return;
-  // Remove o card da tela imediatamente
-  const card = document.querySelector('[data-id="' + id + '"]');
-  if (card) card.remove();
+  // Remove da lista local e redesenha ANTES de qualquer coisa
   records = records.filter(r => String(r.id) !== String(id));
+  renderRecords();
   updateReports();
   toast('Registro apagado.');
-  // Soft delete no banco (funciona e vai pra lixeira do admin)
+  // Soft delete no banco em segundo plano
   const { data:{ user } } = await sb.auth.getUser();
-  await sb.from('entregas').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('user_id', user.id);
+  await sb.from('entregas')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', user.id);
 }
 
 // ═══════════════════════════════════
