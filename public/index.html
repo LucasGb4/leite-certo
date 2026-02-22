@@ -602,7 +602,7 @@ function showAuthAlert(msg,type){
 async function loadRecords(){
   const { data:{ user } } = await sb.auth.getUser();
   if (!user) return;
-  const { data, error } = await sb.from('entregas').select('*').eq('user_id', user.id).order('date',{ ascending:false });
+  const { data, error } = await sb.from('entregas').select('*').eq('user_id', user.id).is('deleted_at', null).order('date',{ ascending:false });
   if (!error && data) records = data;
   renderRecords();
   populateMonthFilter();
@@ -636,14 +636,15 @@ async function saveRecord(){
 
 async function deleteRecord(id){
   if (!confirm('Apagar este registro?')) return;
-  // Atualização otimista: remove da tela imediatamente
+  // Remove o card da tela imediatamente
+  const card = document.querySelector('[data-id="' + id + '"]');
+  if (card) card.remove();
   records = records.filter(r => String(r.id) !== String(id));
-  renderRecords();
   updateReports();
   toast('Registro apagado.');
-  // Apaga do banco em segundo plano
+  // Soft delete no banco (funciona e vai pra lixeira do admin)
   const { data:{ user } } = await sb.auth.getUser();
-  await sb.from('entregas').delete().eq('id', id).eq('user_id', user.id);
+  await sb.from('entregas').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('user_id', user.id);
 }
 
 // ═══════════════════════════════════
@@ -674,7 +675,7 @@ function renderRecords(){
     return;
   }
   el.innerHTML = list.map(r => `
-    <div class="record-card">
+    <div class="record-card" data-id="${r.id}">
       <div class="record-info">
         <div class="record-name">${esc(r.person)}</div>
         <div class="record-meta">
