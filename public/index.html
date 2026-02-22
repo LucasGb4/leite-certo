@@ -1,28 +1,14 @@
-function deleteRecord(recordId) {
-    // Assuming there’s a function to soft delete in the database
-    softDeleteFromDatabase(recordId)
-        .then(response => {
-            if (response.success) {
-                // Proceed to remove the record from the local records array
-                records = records.filter(record => record.id !== recordId);
-                console.log('Record deleted successfully.');
-            } else {
-                console.error('Failed to delete record from database:', response.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error while deleting record:', error);
-        });
-}  
-
-function softDeleteFromDatabase(recordId) {
-    return new Promise((resolve, reject) => {
-        // Simulate an API call to soft delete the record
-        const success = true; // change to false to simulate failure
-        if (success) {
-            resolve({ success: true });
-        } else {
-            reject({ success: false, error: 'Database error' });
-        }
-    });
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leite Certo</title>
+</head>
+<body>
+    <h1>Welcome to Leite Certo</h1>
+    <div id="app">
+        <!-- Your app content here -->
+    </div>
+</body>
+</html>
