@@ -1,11 +1,10 @@
-const CACHE_NAME = 'leite-certo-v2';
+const CACHE_NAME = 'leite-certo-v3';
 const CACHED_URLS = [
   '/',
   '/index.html',
   '/manifest.json'
 ];
 
-// Admin nunca é cacheado
 const NO_CACHE = ['/admin.html'];
 
 self.addEventListener('install', e => {
@@ -27,14 +26,14 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Nunca cachear admin
-  if (NO_CACHE.some(p => url.pathname.includes(p))) {
-    e.respondWith(fetch(e.request));
-    return;
-  }
-
-  // Nunca cachear chamadas ao Supabase
-  if (url.hostname.includes('supabase')) {
+  if (
+    e.request.method !== 'GET' ||
+    NO_CACHE.some(p => url.pathname.includes(p)) ||
+    url.hostname.includes('supabase') ||
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('googleapis') ||
+    url.hostname.includes('gstatic')
+  ) {
     e.respondWith(fetch(e.request));
     return;
   }
