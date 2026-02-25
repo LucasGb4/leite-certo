@@ -14,25 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-  import { getFirestore, collection, doc, addDoc, getDocs, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyC3V00Qj405tjwCt7Ec9JSYVQ6-otl06XE",
-    authDomain: "leite-certo-e92dd.firebaseapp.com",
-    projectId: "leite-certo-e92dd",
-    storageBucket: "leite-certo-e92dd.firebasestorage.app",
-    messagingSenderId: "375379213395",
-    appId: "1:375379213395:web:e09d6815dba946471fdaa6"
-  };
-
-  const fbApp = initializeApp(firebaseConfig);
-  window.auth = getAuth(fbApp);
-  window.db   = getFirestore(fbApp);
-  window.fbFns = { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, collection, doc, addDoc, getDocs, updateDoc, query, where, orderBy };
-  </script>
+  
   <style>
     :root {
       --green:     #16a34a;
@@ -276,6 +258,7 @@
     ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
   </style>
 </head>
+</head>
 <body>
 
 <!-- LOADING -->
@@ -482,374 +465,372 @@
 
 <div id="toast"></div>
 
-<script>
-    // Wait for Firebase to load
-    function waitFb(cb){
-      if(window.auth && window.db && window.fbFns) cb();
-      else setTimeout(()=>waitFb(cb), 50);
-    }
 
-    const SUGGESTS = ['total de litros','receita total','entregas de hoje','resumo da semana','resumo do mês','quem recebeu mais'];
-    let records = [], editingId = null, period = 'mes', dateRef = new Date(), chartMode = 'liters', botMsgs = [];
 
-    // BOOT
-    window.addEventListener('load', () => {
-      if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-      waitFb(() => {
-        const { onAuthStateChanged } = window.fbFns;
-        onAuthStateChanged(window.auth, async (user) => {
-          hideLoading();
-          if (user) await startApp(user);
-          else showAuth();
-        });
-      });
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, getDocs, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC3V00Qj405tjwCt7Ec9JSYVQ6-otl06XE",
+  authDomain: "leite-certo-e92dd.firebaseapp.com",
+  projectId: "leite-certo-e92dd",
+  storageBucket: "leite-certo-e92dd.firebasestorage.app",
+  messagingSenderId: "375379213395",
+  appId: "1:375379213395:web:e09d6815dba946471fdaa6"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const SUGGESTS = ['total de litros','receita total','entregas de hoje','resumo da semana','resumo do mês','quem recebeu mais'];
+let records = [], editingId = null, period = 'mes', dateRef = new Date(), chartMode = 'liters', botMsgs = [];
+
+// BOOT
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+onAuthStateChanged(auth, async (user) => {
+  hideLoading();
+  if (user) await startApp(user);
+  else showAuth();
+});
+
+function hideLoading(){
+  const l = document.getElementById('loading');
+  l.style.opacity = '0';
+  setTimeout(() => l.style.display = 'none', 400);
+}
+
+async function startApp(user){
+  const tr = document.getElementById('pageTransition');
+  tr.classList.add('active');
+  await loadRecords();
+  setTimeout(() => {
+    document.getElementById('authScreen').classList.remove('active');
+    document.getElementById('app').classList.add('active');
+    document.getElementById('userAvatar').textContent = (user.email||'?')[0].toUpperCase();
+    initBot();
+    updateReports();
+    setTimeout(() => tr.classList.remove('active'), 400);
+  }, 600);
+}
+
+function showAuth(){
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('authScreen').classList.add('active');
+  records = [];
+}
+
+// AUTH
+window.switchAuth = function(tab){
+  ['loginForm','signupForm','forgotForm'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById(tab === 'forgot' ? 'forgotForm' : tab === 'signup' ? 'signupForm' : 'loginForm').style.display = 'block';
+  document.querySelectorAll('.auth-tab').forEach((b,i) => b.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='signup')));
+  document.getElementById('authAlert').className = 'alert';
+};
+
+window.doLogin = async function(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email||!pass){ showAuthAlert('Preencha e-mail e senha.','error'); return; }
+  const btn = document.getElementById('btnLoginSubmit');
+  if(btn) btn.classList.add('loading');
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    if(btn) btn.classList.remove('loading');
+    console.error('Login error:', e.code, e.message);
+    let msg = 'Erro: ' + (e.code || e.message);
+    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'E-mail ou senha incorretos.';
+    else if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
+    else if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
+    showAuthAlert(msg,'error');
+  }
+};
+
+window.doSignup = async function(){
+  const name    = document.getElementById('signupName').value.trim().substring(0,100);
+  const email   = document.getElementById('signupEmail').value.trim().substring(0,150);
+  const pass    = document.getElementById('signupPass').value;
+  const confirm = document.getElementById('signupConfirm').value;
+  if (!name){ showAuthAlert('Digite seu nome.','error'); return; }
+  if (!email||!pass){ showAuthAlert('Preencha todos os campos.','error'); return; }
+  if (pass.length < 6){ showAuthAlert('Senha mínimo 6 caracteres.','error'); return; }
+  if (pass !== confirm){ showAuthAlert('As senhas não coincidem.','error'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await addDoc(collection(db, 'profiles'), {
+      uid: cred.user.uid, name, email, created_at: new Date().toISOString()
     });
+    showAuthAlert('Conta criada! Entrando…','success');
+  } catch(e) {
+    console.error('Signup error:', e.code, e.message);
+    showAuthAlert('Não foi possível criar a conta: ' + (e.code || e.message), 'error');
+  }
+};
 
-    function hideLoading(){
-      const l = document.getElementById('loading');
-      l.style.opacity = '0';
-      setTimeout(() => l.style.display = 'none', 400);
+window.doForgot = async function(){
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email){ showAuthAlert('Digite seu e-mail.','error'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showAuthAlert('E-mail enviado! Verifique sua caixa de entrada.','success');
+  } catch(e) {
+    console.error('Forgot error:', e.code, e.message);
+    showAuthAlert('Erro: ' + (e.code || e.message), 'error');
+  }
+};
+
+window.doLogout = async function(){
+  if (!confirm('Sair do app?')) return;
+  await signOut(auth);
+};
+
+function showAuthAlert(msg,type){
+  const el = document.getElementById('authAlert');
+  el.textContent = msg;
+  el.className = `alert alert-${type} show`;
+}
+
+// RECORDS
+async function loadRecords(){
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    const q = query(
+      collection(db, 'entregas'),
+      where('user_id', '==', user.uid),
+      where('deleted_at', '==', null),
+      orderBy('date', 'desc')
+    );
+    const snap = await getDocs(q);
+    records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.error('loadRecords:', e); records = []; }
+  renderRecords();
+  populateMonthFilter();
+}
+
+window.saveRecord = async function(){
+  const person = document.getElementById('fPerson').value.trim().substring(0,100);
+  const qty    = parseFloat(document.getElementById('fQty').value);
+  const rawPrice = document.getElementById('fPrice').value.replace(',','.');
+  const price  = parseFloat(rawPrice) || 0;
+  const date   = document.getElementById('fDate').value;
+  if (!person||!qty||!date){ toast('⚠️ Preencha os campos obrigatórios!'); return; }
+  if (qty <= 0){ toast('⚠️ Quantidade deve ser maior que zero.'); return; }
+  const saveBtn = document.querySelector('.modal-actions .btn-primary');
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.innerHTML='Salvando…'; }
+  try {
+    const user = auth.currentUser;
+    if (!user){ toast('⚠️ Sessão expirada. Faça login novamente.'); return; }
+    if (editingId){
+      await updateDoc(doc(db, 'entregas', editingId), { person, quantity:qty, price, date });
+      toast('Registro atualizado! ✅','success');
+    } else {
+      await addDoc(collection(db, 'entregas'), {
+        user_id: user.uid, person, quantity: qty, price, date, deleted_at: null, created_at: new Date().toISOString()
+      });
+      toast('Entrega registrada! 🎉','success');
     }
+    if(saveBtn){saveBtn.disabled=false;saveBtn.innerHTML='💾 Salvar';}
+    closeModal();
+    await loadRecords();
+    updateReports();
+  } catch(e) {
+    console.error('saveRecord:', e);
+    toast('⚠️ Erro ao salvar: ' + (e.code || e.message));
+    if(saveBtn){saveBtn.disabled=false;saveBtn.innerHTML='💾 Salvar';}
+  }
+};
 
-    async function startApp(user){
-      const tr = document.getElementById('pageTransition');
-      tr.classList.add('active');
-      await loadRecords();
-      setTimeout(() => {
-        document.getElementById('authScreen').classList.remove('active');
-        document.getElementById('app').classList.add('active');
-        document.getElementById('userAvatar').textContent = (user.email||'?')[0].toUpperCase();
-        initBot();
-        updateReports();
-        setTimeout(() => tr.classList.remove('active'), 400);
-      }, 600);
-    }
+window.deleteRecord = async function(id){
+  if (!confirm('Apagar este registro?')) return;
+  records = records.filter(r => r.id !== id);
+  renderRecords();
+  updateReports();
+  toast('Registro apagado.');
+  try {
+    await updateDoc(doc(db, 'entregas', id), { deleted_at: new Date().toISOString() });
+  } catch(e) { console.error('deleteRecord:', e); }
+};
 
-    function showAuth(){
-      document.getElementById('app').classList.remove('active');
-      document.getElementById('authScreen').classList.add('active');
-      records = [];
-    }
+// RENDER
+function renderRecords(){
+  const search = (document.getElementById('searchInput')?.value||'').toLowerCase();
+  const month  = document.getElementById('monthFilter')?.value||'';
+  const list   = records.filter(r => r.person.toLowerCase().includes(search) && (month ? r.date.startsWith(month) : true));
+  const tL     = list.reduce((s,r)=>s+r.quantity,0);
+  const tR     = list.reduce((s,r)=>s+r.quantity*(r.price||0),0);
+  const bar    = document.getElementById('summaryBar');
+  if (list.length > 0){
+    bar.style.display = 'flex';
+    bar.innerHTML = `<span>📦 ${list.length} entrega${list.length!==1?'s':''}</span><span>🥛 ${fL(tL)}</span>${tR>0?`<span>💰 ${fR(tR)}</span>`:''}`;
+  } else { bar.style.display = 'none'; }
+  const el = document.getElementById('recordsList');
+  if (list.length === 0){
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🥛</div><p>${search||month?'Nenhum resultado.':'Nenhum registro ainda. Toque no + para adicionar!'}</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(r => `
+    <div class="record-card" data-id="${r.id}">
+      <div class="record-info">
+        <div class="record-name">${esc(r.person)}</div>
+        <div class="record-meta">
+          <span class="liters">🥛 ${fL(r.quantity)}</span>
+          <span>📅 ${fDate(r.date)}</span>
+          ${r.price>0?`<span class="money">💰 ${fR(r.quantity*r.price)}</span>`:''}
+        </div>
+      </div>
+      <div class="record-actions">
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal('${r.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteRecord('${r.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
 
-    // AUTH
-    function switchAuth(tab){
-      ['loginForm','signupForm','forgotForm'].forEach(id => document.getElementById(id).style.display = 'none');
-      document.getElementById(tab === 'forgot' ? 'forgotForm' : tab === 'signup' ? 'signupForm' : 'loginForm').style.display = 'block';
-      document.querySelectorAll('.auth-tab').forEach((b,i) => b.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='signup')));
-      document.getElementById('authAlert').className = 'alert';
-    }
+function populateMonthFilter(){
+  const months = [...new Set(records.map(r=>r.date.slice(0,7)))].sort().reverse();
+  const sel = document.getElementById('monthFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos os meses</option>' +
+    months.map(m=>`<option value="${m}"${m===cur?' selected':''}>${fMonth(m)}</option>`).join('');
+}
 
-    async function doLogin(){
-      const email = document.getElementById('loginEmail').value.trim();
-      const pass  = document.getElementById('loginPass').value;
-      if (!email||!pass){ showAuthAlert('Preencha e-mail e senha.','error'); return; }
-      const btn = document.getElementById('btnLoginSubmit');
-      if(btn) btn.classList.add('loading');
-      try {
-        if (!window.auth || !window.fbFns) {
-          showAuthAlert('Aguarde, conectando...','error');
-          if(btn) btn.classList.remove('loading');
-          return;
-        }
-        const { signInWithEmailAndPassword } = window.fbFns;
-        await signInWithEmailAndPassword(window.auth, email, pass);
-      } catch(e) {
-        if(btn) btn.classList.remove('loading');
-        console.error('Firebase error:', e.code, e.message);
-        let msg = 'Erro ao conectar. Tente novamente.';
-        if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'E-mail ou senha incorretos.';
-        else if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
-        else if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
-        else msg = 'Erro: ' + (e.code || e.message);
-        showAuthAlert(msg,'error');
-      }
-    }
+// MODAL
+window.openAddModal = function(){
+  editingId = null;
+  document.getElementById('modalTitle').textContent = '➕ Nova Entrega';
+  document.getElementById('fPerson').value = '';
+  document.getElementById('fQty').value    = '';
+  document.getElementById('fPrice').value  = '';
+  document.getElementById('fDate').value   = todayStr();
+  document.getElementById('modalOverlay').classList.add('active');
+};
 
-    async function doSignup(){
-      const name    = document.getElementById('signupName').value.trim().substring(0,100);
-      const email   = document.getElementById('signupEmail').value.trim().substring(0,150);
-      const pass    = document.getElementById('signupPass').value;
-      const confirm = document.getElementById('signupConfirm').value;
-      if (!name){ showAuthAlert('Digite seu nome.','error'); return; }
-      if (!email||!pass){ showAuthAlert('Preencha todos os campos.','error'); return; }
-      if (pass.length < 6){ showAuthAlert('Senha mínimo 6 caracteres.','error'); return; }
-      if (pass !== confirm){ showAuthAlert('As senhas não coincidem.','error'); return; }
-      try {
-        const { createUserWithEmailAndPassword, collection, addDoc } = window.fbFns;
-        const cred = await createUserWithEmailAndPassword(window.auth, email, pass);
-        await addDoc(collection(window.db, 'profiles'), {
-          uid: cred.user.uid, name, email, created_at: new Date().toISOString()
-        });
-        showAuthAlert('Conta criada! Entrando…','success');
-      } catch(e) {
-        showAuthAlert('Não foi possível criar a conta. Tente outro e-mail.','error');
-      }
-    }
+window.openEditModal = function(id){
+  const r = records.find(r=>r.id===id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '✏️ Editar Entrega';
+  document.getElementById('fPerson').value = r.person;
+  document.getElementById('fQty').value    = r.quantity;
+  document.getElementById('fPrice').value  = r.price||'';
+  document.getElementById('fDate').value   = r.date;
+  document.getElementById('modalOverlay').classList.add('active');
+};
 
-    async function doForgot(){
-      const email = document.getElementById('forgotEmail').value.trim();
-      if (!email){ showAuthAlert('Digite seu e-mail.','error'); return; }
-      try {
-        const { sendPasswordResetEmail } = window.fbFns;
-        await sendPasswordResetEmail(window.auth, email);
-        showAuthAlert('E-mail enviado! Verifique sua caixa de entrada.','success');
-      } catch(e) {
-        console.error('Forgot password error:', e.code, e.message);
-        showAuthAlert('Erro: ' + (e.code || 'Tente novamente.'), 'error');
-      }
-    }
+window.closeModal = function(){
+  document.getElementById('modalOverlay').classList.remove('active');
+  editingId = null;
+};
 
-    async function doLogout(){
-      if (!confirm('Sair do app?')) return;
-      const { signOut } = window.fbFns;
-      await signOut(window.auth);
-    }
+// TABS
+window.switchTab = function(name){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-tab')[['registros','relatorios','bot'].indexOf(name)].classList.add('active');
+  document.getElementById('fab').style.display = name==='bot'?'none':'flex';
+  if (name==='relatorios') updateReports();
+};
 
-    function showAuthAlert(msg,type){
-      const el = document.getElementById('authAlert');
-      el.textContent = msg;
-      el.className = `alert alert-${type} show`;
-    }
+// REPORTS
+window.setPeriod = function(p){ period=p; dateRef=new Date(); document.querySelectorAll('.period-btn').forEach((b,i)=>b.classList.toggle('active',['dia','semana','mes','ano'][i]===p)); updateReports(); };
+window.navDate = function(dir){ if(period==='dia') dateRef.setDate(dateRef.getDate()+dir); else if(period==='semana') dateRef.setDate(dateRef.getDate()+dir*7); else if(period==='mes') dateRef.setMonth(dateRef.getMonth()+dir); else dateRef.setFullYear(dateRef.getFullYear()+dir); updateReports(); };
+window.setChartMode = function(m){ chartMode=m; document.getElementById('togL').classList.toggle('active',m==='liters'); document.getElementById('togM').classList.toggle('active',m==='money'); updateReports(); };
 
-    // RECORDS
-    async function loadRecords(){
-      const user = window.auth.currentUser;
-      if (!user) return;
-      const { collection, query, where, orderBy, getDocs } = window.fbFns;
-      try {
-        const q = query(
-          collection(window.db, 'entregas'),
-          where('user_id', '==', user.uid),
-          where('deleted_at', '==', null),
-          orderBy('date', 'desc')
-        );
-        const snap = await getDocs(q);
-        records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      } catch(e) { records = []; }
-      renderRecords();
-      populateMonthFilter();
-    }
+function updateReports(){
+  const{filtered,label,bars,ranking}=getReportData();
+  document.getElementById('dateLabel').textContent=label;
+  const tL=filtered.reduce((s,r)=>s+r.quantity,0),tR=filtered.reduce((s,r)=>s+r.quantity*(r.price||0),0),cnt=filtered.length,avg=cnt?tL/cnt:0;
+  document.getElementById('reportStats').innerHTML=`<div class="stat-card liters"><div class="stat-icon">🥛</div><div class="stat-value">${fL(tL)}</div><div class="stat-label">Litros entregues</div></div><div class="stat-card money"><div class="stat-icon">💰</div><div class="stat-value">${fR(tR)}</div><div class="stat-label">Dinheiro ganho</div></div><div class="stat-card count"><div class="stat-icon">📦</div><div class="stat-value">${cnt}</div><div class="stat-label">Entregas</div></div><div class="stat-card avg"><div class="stat-icon">📈</div><div class="stat-value">${fL(avg)}</div><div class="stat-label">Média / entrega</div></div>`;
+  const maxV=Math.max(...bars.map(b=>chartMode==='liters'?b.liters:b.money),1);
+  document.getElementById('chartTitle').textContent=chartMode==='liters'?'🥛 Litros por período':'💰 Receita por período';
+  document.getElementById('chartBars').innerHTML=bars.length===0?'<div class="no-chart">Sem dados</div>':bars.map(b=>{const val=chartMode==='liters'?b.liters:b.money;return`<div class="chart-bar-row"><span class="chart-bar-label">${b.label}</span><div class="chart-bar-track"><div class="chart-bar-fill ${chartMode==='liters'?'bar-liters':'bar-money'}" style="width:${(val/maxV*100).toFixed(1)}%"></div></div><span class="chart-bar-value">${chartMode==='liters'?fL(val):fR(val)}</span></div>`;}).join('');
+  document.getElementById('rankingList').innerHTML=ranking.length===0?'<div style="padding:20px;text-align:center;color:var(--muted)">Nenhum dado</div>':ranking.map(([name,s],i)=>`<div class="ranking-item"><span class="ranking-pos">${['🥇','🥈','🥉'][i]||`#${i+1}`}</span><div><div class="ranking-name">${esc(name)}</div><div class="ranking-sub">${fL(s.liters)} • ${s.count} entrega${s.count!==1?'s':''}${s.money>0?` • ${fR(s.money)}`:''}</div></div><span class="ranking-badge">${fL(s.liters)}</span></div>`).join('');
+}
 
-    async function saveRecord(){
-      const person = document.getElementById('fPerson').value.trim().substring(0,100);
-      const qty    = parseFloat(document.getElementById('fQty').value);
-      const rawPrice = document.getElementById('fPrice').value.replace(',','.');
-      const price  = parseFloat(rawPrice) || 0;
-      const date   = document.getElementById('fDate').value;
-      if (!person||!qty||!date){ toast('⚠️ Preencha os campos obrigatórios!'); return; }
-      if (qty <= 0){ toast('⚠️ Quantidade deve ser maior que zero.'); return; }
-      const saveBtn = document.querySelector('.modal-actions .btn-primary');
-      if(saveBtn){ saveBtn.disabled=true; saveBtn.innerHTML='Salvando…'; }
-      try {
-        const user = window.auth.currentUser;
-        if (!user){ toast('⚠️ Sessão expirada. Faça login novamente.'); return; }
-        const { collection, doc, addDoc, updateDoc } = window.fbFns;
-        if (editingId){
-          await updateDoc(doc(window.db, 'entregas', editingId), { person, quantity:qty, price, date });
-          toast('Registro atualizado! ✅','success');
-        } else {
-          await addDoc(collection(window.db, 'entregas'), {
-            user_id: user.uid, person, quantity: qty, price, date, deleted_at: null, created_at: new Date().toISOString()
-          });
-          toast('Entrega registrada! 🎉','success');
-        }
-        if(saveBtn){saveBtn.disabled=false;saveBtn.innerHTML='💾 Salvar';}
-        closeModal();
-        await loadRecords();
-        updateReports();
-      } catch(e) {
-        toast('⚠️ Erro ao salvar. Tente novamente.');
-        if(saveBtn){saveBtn.disabled=false;saveBtn.innerHTML='💾 Salvar';}
-      }
-    }
+function getReportData(){
+  const d=new Date(dateRef); let filtered=[],label='',bars=[];
+  if(period==='dia'){const str=toStr(d);filtered=records.filter(r=>r.date===str);label=fDate(str);const tL=filtered.reduce((s,r)=>s+r.quantity,0),tM=filtered.reduce((s,r)=>s+r.quantity*(r.price||0),0);bars=[{label:'Hoje',liters:tL,money:tM}];}
+  else if(period==='semana'){const start=new Date(d);start.setDate(d.getDate()-d.getDay());const end=new Date(start);end.setDate(start.getDate()+6);filtered=records.filter(r=>r.date>=toStr(start)&&r.date<=toStr(end));label=`${fDate(toStr(start))} – ${fDate(toStr(end))}`;bars=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((lbl,i)=>{const ds=new Date(start);ds.setDate(start.getDate()+i);const str=toStr(ds);const recs=records.filter(r=>r.date===str);return{label:lbl,liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};});}
+  else if(period==='mes'){const ym=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;filtered=records.filter(r=>r.date.startsWith(ym));label=fMonth(ym);const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();bars=Array.from({length:dim},(_,i)=>{const day=String(i+1).padStart(2,'0'),str=`${ym}-${day}`;const recs=records.filter(r=>r.date===str);return{label:String(i+1),liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};}).filter(b=>b.liters>0||b.money>0);}
+  else{const y=d.getFullYear();filtered=records.filter(r=>r.date.startsWith(String(y)));label=String(y);bars=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((lbl,i)=>{const m=String(i+1).padStart(2,'0');const recs=records.filter(r=>r.date.startsWith(`${y}-${m}`));return{label:lbl,liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};});}
+  const byP={};filtered.forEach(r=>{if(!byP[r.person])byP[r.person]={liters:0,money:0,count:0};byP[r.person].liters+=r.quantity;byP[r.person].money+=r.quantity*(r.price||0);byP[r.person].count+=1;});
+  return{filtered,label,bars,ranking:Object.entries(byP).sort((a,b)=>b[1].liters-a[1].liters)};
+}
 
-    async function deleteRecord(id){
-      if (!confirm('Apagar este registro?')) return;
-      records = records.filter(r => r.id !== id);
-      renderRecords();
-      updateReports();
-      toast('Registro apagado.');
-      try {
-        const { doc, updateDoc } = window.fbFns;
-        await updateDoc(doc(window.db, 'entregas', id), { deleted_at: new Date().toISOString() });
-      } catch(e) {}
-    }
+// BOT
+function initBot(){
+  botMsgs=[];
+  addMsg('bot','Olá! 👋 Sou o assistente do *Leite Certo*.\n\nPergunte sobre as entregas!\n\nOu digite *ajuda* para ver o que sei responder.');
+  const botSugEl=document.getElementById('botSuggests');
+  botSugEl.innerHTML='';
+  SUGGESTS.forEach(s=>{const btn=document.createElement('button');btn.className='bot-sug-btn';btn.textContent=s;btn.addEventListener('click',()=>sendBot(s));botSugEl.appendChild(btn);});
+}
 
-    // RENDER RECORDS
-    function renderRecords(){
-      const search = (document.getElementById('searchInput')?.value||'').toLowerCase();
-      const month  = document.getElementById('monthFilter')?.value||'';
-      const list   = records.filter(r => r.person.toLowerCase().includes(search) && (month ? r.date.startsWith(month) : true));
-      const tL     = list.reduce((s,r)=>s+r.quantity,0);
-      const tR     = list.reduce((s,r)=>s+r.quantity*(r.price||0),0);
-      const bar    = document.getElementById('summaryBar');
-      if (list.length > 0){
-        bar.style.display = 'flex';
-        bar.innerHTML = `<span>📦 ${list.length} entrega${list.length!==1?'s':''}</span><span>🥛 ${fL(tL)}</span>${tR>0?`<span>💰 ${fR(tR)}</span>`:''}`;
-      } else { bar.style.display = 'none'; }
-      const el = document.getElementById('recordsList');
-      if (list.length === 0){
-        el.innerHTML = `<div class="empty-state"><div class="empty-icon">🥛</div><p>${search||month?'Nenhum resultado.':'Nenhum registro ainda. Toque no + para adicionar!'}</p></div>`;
-        return;
-      }
-      el.innerHTML = list.map(r => `
-        <div class="record-card" data-id="${r.id}">
-          <div class="record-info">
-            <div class="record-name">${esc(r.person)}</div>
-            <div class="record-meta">
-              <span class="liters">🥛 ${fL(r.quantity)}</span>
-              <span>📅 ${fDate(r.date)}</span>
-              ${r.price>0?`<span class="money">💰 ${fR(r.quantity*r.price)}</span>`:''}
-            </div>
-          </div>
-          <div class="record-actions">
-            <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal('${r.id}')">✏️</button>
-            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteRecord('${r.id}')">🗑️</button>
-          </div>
-        </div>`).join('');
-    }
+window.sendBot = function(text){
+  const input=document.getElementById('botInput');
+  const q=text||input.value.trim();
+  if(!q)return;
+  input.value='';
+  addMsg('user',q);
+  setTimeout(()=>addMsg('bot',botReply(q)),700);
+};
 
-    function populateMonthFilter(){
-      const months = [...new Set(records.map(r=>r.date.slice(0,7)))].sort().reverse();
-      const sel = document.getElementById('monthFilter');
-      const cur = sel.value;
-      sel.innerHTML = '<option value="">Todos os meses</option>' +
-        months.map(m=>`<option value="${m}"${m===cur?' selected':''}>${fMonth(m)}</option>`).join('');
-    }
+function addMsg(from,text){
+  botMsgs.push({from,text});
+  const el=document.getElementById('botMessages');
+  el.innerHTML=botMsgs.map(m=>`<div class="bot-msg ${m.from}">${m.from==='bot'?'<div class="bot-avatar">🐄</div>':''}<div class="bot-bubble">${renderText(m.text)}</div></div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
 
-    // MODAL
-    function openAddModal(){
-      editingId = null;
-      document.getElementById('modalTitle').textContent = '➕ Nova Entrega';
-      document.getElementById('fPerson').value = '';
-      document.getElementById('fQty').value    = '';
-      document.getElementById('fPrice').value  = '';
-      document.getElementById('fDate').value   = todayStr();
-      document.getElementById('modalOverlay').classList.add('active');
-    }
-
-    function openEditModal(id){
-      const r = records.find(r=>r.id===id);
-      if (!r) return;
-      editingId = id;
-      document.getElementById('modalTitle').textContent = '✏️ Editar Entrega';
-      document.getElementById('fPerson').value = r.person;
-      document.getElementById('fQty').value    = r.quantity;
-      document.getElementById('fPrice').value  = r.price||'';
-      document.getElementById('fDate').value   = r.date;
-      document.getElementById('modalOverlay').classList.add('active');
-    }
-
-    function closeModal(){
-      document.getElementById('modalOverlay').classList.remove('active');
-      editingId = null;
-    }
-
-    // TABS
-    function switchTab(name){
-      document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
-      document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
-      document.getElementById(`tab-${name}`).classList.add('active');
-      document.querySelectorAll('.nav-tab')[['registros','relatorios','bot'].indexOf(name)].classList.add('active');
-      document.getElementById('fab').style.display = name==='bot'?'none':'flex';
-      if (name==='relatorios') updateReports();
-    }
-
-    // REPORTS
-    function setPeriod(p){ period=p; dateRef=new Date(); document.querySelectorAll('.period-btn').forEach((b,i)=>b.classList.toggle('active',['dia','semana','mes','ano'][i]===p)); updateReports(); }
-    function navDate(dir){ if(period==='dia') dateRef.setDate(dateRef.getDate()+dir); else if(period==='semana') dateRef.setDate(dateRef.getDate()+dir*7); else if(period==='mes') dateRef.setMonth(dateRef.getMonth()+dir); else dateRef.setFullYear(dateRef.getFullYear()+dir); updateReports(); }
-    function setChartMode(m){ chartMode=m; document.getElementById('togL').classList.toggle('active',m==='liters'); document.getElementById('togM').classList.toggle('active',m==='money'); updateReports(); }
-
-    function updateReports(){
-      const{filtered,label,bars,ranking}=getReportData();
-      document.getElementById('dateLabel').textContent=label;
-      const tL=filtered.reduce((s,r)=>s+r.quantity,0),tR=filtered.reduce((s,r)=>s+r.quantity*(r.price||0),0),cnt=filtered.length,avg=cnt?tL/cnt:0;
-      document.getElementById('reportStats').innerHTML=`<div class="stat-card liters"><div class="stat-icon">🥛</div><div class="stat-value">${fL(tL)}</div><div class="stat-label">Litros entregues</div></div><div class="stat-card money"><div class="stat-icon">💰</div><div class="stat-value">${fR(tR)}</div><div class="stat-label">Dinheiro ganho</div></div><div class="stat-card count"><div class="stat-icon">📦</div><div class="stat-value">${cnt}</div><div class="stat-label">Entregas</div></div><div class="stat-card avg"><div class="stat-icon">📈</div><div class="stat-value">${fL(avg)}</div><div class="stat-label">Média / entrega</div></div>`;
-      const maxV=Math.max(...bars.map(b=>chartMode==='liters'?b.liters:b.money),1);
-      document.getElementById('chartTitle').textContent=chartMode==='liters'?'🥛 Litros por período':'💰 Receita por período';
-      document.getElementById('chartBars').innerHTML=bars.length===0?'<div class="no-chart">Sem dados</div>':bars.map(b=>{const val=chartMode==='liters'?b.liters:b.money;return`<div class="chart-bar-row"><span class="chart-bar-label">${b.label}</span><div class="chart-bar-track"><div class="chart-bar-fill ${chartMode==='liters'?'bar-liters':'bar-money'}" style="width:${(val/maxV*100).toFixed(1)}%"></div></div><span class="chart-bar-value">${chartMode==='liters'?fL(val):fR(val)}</span></div>`;}).join('');
-      document.getElementById('rankingList').innerHTML=ranking.length===0?'<div style="padding:20px;text-align:center;color:var(--muted)">Nenhum dado</div>':ranking.map(([name,s],i)=>`<div class="ranking-item"><span class="ranking-pos">${['🥇','🥈','🥉'][i]||`#${i+1}`}</span><div><div class="ranking-name">${esc(name)}</div><div class="ranking-sub">${fL(s.liters)} • ${s.count} entrega${s.count!==1?'s':''}${s.money>0?` • ${fR(s.money)}`:''}</div></div><span class="ranking-badge">${fL(s.liters)}</span></div>`).join('');
-    }
-
-    function getReportData(){
-      const d=new Date(dateRef); let filtered=[],label='',bars=[];
-      if(period==='dia'){const str=toStr(d);filtered=records.filter(r=>r.date===str);label=fDate(str);const tL=filtered.reduce((s,r)=>s+r.quantity,0),tM=filtered.reduce((s,r)=>s+r.quantity*(r.price||0),0);bars=[{label:'Hoje',liters:tL,money:tM}];}
-      else if(period==='semana'){const start=new Date(d);start.setDate(d.getDate()-d.getDay());const end=new Date(start);end.setDate(start.getDate()+6);filtered=records.filter(r=>r.date>=toStr(start)&&r.date<=toStr(end));label=`${fDate(toStr(start))} – ${fDate(toStr(end))}`;bars=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((lbl,i)=>{const ds=new Date(start);ds.setDate(start.getDate()+i);const str=toStr(ds);const recs=records.filter(r=>r.date===str);return{label:lbl,liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};});}
-      else if(period==='mes'){const ym=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;filtered=records.filter(r=>r.date.startsWith(ym));label=fMonth(ym);const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();bars=Array.from({length:dim},(_,i)=>{const day=String(i+1).padStart(2,'0'),str=`${ym}-${day}`;const recs=records.filter(r=>r.date===str);return{label:String(i+1),liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};}).filter(b=>b.liters>0||b.money>0);}
-      else{const y=d.getFullYear();filtered=records.filter(r=>r.date.startsWith(String(y)));label=String(y);bars=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((lbl,i)=>{const m=String(i+1).padStart(2,'0');const recs=records.filter(r=>r.date.startsWith(`${y}-${m}`));return{label:lbl,liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};});}
-      const byP={};filtered.forEach(r=>{if(!byP[r.person])byP[r.person]={liters:0,money:0,count:0};byP[r.person].liters+=r.quantity;byP[r.person].money+=r.quantity*(r.price||0);byP[r.person].count+=1;});
-      return{filtered,label,bars,ranking:Object.entries(byP).sort((a,b)=>b[1].liters-a[1].liters)};
-    }
-
-    // BOT
-    function initBot(){
-      botMsgs=[];
-      addMsg('bot','Olá! 👋 Sou o assistente do *Leite Certo*.\n\nPergunte sobre as entregas!\n\nOu digite *ajuda* para ver o que sei responder.');
-      const botSugEl=document.getElementById('botSuggests');
-      botSugEl.innerHTML='';
-      SUGGESTS.forEach(s=>{const btn=document.createElement('button');btn.className='bot-sug-btn';btn.textContent=s;btn.addEventListener('click',()=>sendBot(s));botSugEl.appendChild(btn);});
-    }
-
-    function sendBot(text){
-      const input=document.getElementById('botInput');
-      const q=text||input.value.trim();
-      if(!q)return;
-      input.value='';
-      addMsg('user',q);
-      setTimeout(()=>addMsg('bot',botReply(q)),700);
-    }
-
-    function addMsg(from,text){
-      botMsgs.push({from,text});
-      const el=document.getElementById('botMessages');
-      el.innerHTML=botMsgs.map(m=>`<div class="bot-msg ${m.from}">${m.from==='bot'?'<div class="bot-avatar">🐄</div>':''}<div class="bot-bubble">${renderText(m.text)}</div></div>`).join('');
-      el.scrollTop=el.scrollHeight;
-    }
-
-    function renderText(t){ return t.replace(/\*([^*]+)\*/g,'<strong>$1</strong>').replace(/
+function renderText(t){ return t.replace(/\*([^*]+)\*/g,'<strong>$1</strong>').replace(/
 /g,'<br>'); }
 
-    function botReply(msg){
-      const m=msg.toLowerCase().trim();
-      const tL=records.reduce((s,r)=>s+r.quantity,0),tR=records.reduce((s,r)=>s+r.quantity*(r.price||0),0),cnt=records.length;
-      const td=todayStr(),todayR=records.filter(r=>r.date===td);
-      const ym=td.slice(0,7),monthR=records.filter(r=>r.date.startsWith(ym));
-      const byP={};records.forEach(r=>{if(!byP[r.person])byP[r.person]=0;byP[r.person]+=r.quantity;});
-      const rank=Object.entries(byP).sort((a,b)=>b[1]-a[1]);
-      if(/^(oi|olá|ola|bom dia|boa tarde|boa noite)/.test(m))return'Olá! 👋 Digite *ajuda* para ver o que sei responder!';
-      if(m.includes('ajuda'))return'Posso responder:\n\n🥛 *"total de litros"*\n💰 *"receita total"*\n📅 *"entregas de hoje"*\n📆 *"resumo do mês"*\n🏆 *"quem recebeu mais"*';
-      if((m.includes('total')||m.includes('quanto'))&&m.includes('litro'))return cnt===0?'Sem registros ainda. 📭':`🥛 Total: *${fL(tL)}* em *${cnt}* entrega${cnt!==1?'s':''}${tR>0?`\n💰 Receita: *${fR(tR)}*`:''}`;
-      if(m.includes('receita')||m.includes('dinheiro'))return tR>0?`💰 Receita total: *${fR(tR)}*\n🥛 Referente a *${fL(tL)}* litros.`:'Nenhum preço cadastrado ainda.';
-      if(m.includes('hoje'))return todayR.length===0?'Nenhuma entrega hoje. 📭':`📅 Hoje: 🥛 *${fL(todayR.reduce((s,r)=>s+r.quantity,0))}* em *${todayR.length}* entrega${todayR.length!==1?'s':''}`;
-      if(m.includes('mês')||m.includes('mes'))return monthR.length===0?'Sem entregas este mês.':`📆 ${fMonth(ym)}: 🥛 *${fL(monthR.reduce((s,r)=>s+r.quantity,0))}* em *${monthR.length}* entrega${monthR.length!==1?'s':''}${monthR.reduce((s,r)=>s+r.quantity*(r.price||0),0)>0?`\n💰 ${fR(monthR.reduce((s,r)=>s+r.quantity*(r.price||0),0))}`:''}`;
-      if(m.includes('recebeu mais')||m.includes('ranking'))return rank.length===0?'Sem dados.':`🏆 Top:\n\n${rank.slice(0,3).map(([n,l],i)=>`${['🥇','🥈','🥉'][i]} *${n}*: ${fL(l)}`).join('\n')}`;
-      if(m.includes('obrigad')||m.includes('valeu'))return'De nada! 😊';
-      return'Não entendi. 🤔 Digite *ajuda*!';
-    }
+function botReply(msg){
+  const m=msg.toLowerCase().trim();
+  const tL=records.reduce((s,r)=>s+r.quantity,0),tR=records.reduce((s,r)=>s+r.quantity*(r.price||0),0),cnt=records.length;
+  const td=todayStr(),todayR=records.filter(r=>r.date===td);
+  const ym=td.slice(0,7),monthR=records.filter(r=>r.date.startsWith(ym));
+  const byP={};records.forEach(r=>{if(!byP[r.person])byP[r.person]=0;byP[r.person]+=r.quantity;});
+  const rank=Object.entries(byP).sort((a,b)=>b[1]-a[1]);
+  if(/^(oi|olá|ola|bom dia|boa tarde|boa noite)/.test(m))return'Olá! 👋 Digite *ajuda* para ver o que sei responder!';
+  if(m.includes('ajuda'))return'Posso responder:\n\n🥛 *"total de litros"*\n💰 *"receita total"*\n📅 *"entregas de hoje"*\n📆 *"resumo do mês"*\n🏆 *"quem recebeu mais"*';
+  if((m.includes('total')||m.includes('quanto'))&&m.includes('litro'))return cnt===0?'Sem registros ainda. 📭':`🥛 Total: *${fL(tL)}* em *${cnt}* entrega${cnt!==1?'s':''}${tR>0?`\n💰 Receita: *${fR(tR)}*`:''}`;
+  if(m.includes('receita')||m.includes('dinheiro'))return tR>0?`💰 Receita total: *${fR(tR)}*`:'Nenhum preço cadastrado ainda.';
+  if(m.includes('hoje'))return todayR.length===0?'Nenhuma entrega hoje. 📭':`📅 Hoje: 🥛 *${fL(todayR.reduce((s,r)=>s+r.quantity,0))}* em *${todayR.length}* entrega${todayR.length!==1?'s':''}`;
+  if(m.includes('mês')||m.includes('mes'))return monthR.length===0?'Sem entregas este mês.':`📆 ${fMonth(ym)}: 🥛 *${fL(monthR.reduce((s,r)=>s+r.quantity,0))}* em *${monthR.length}* entrega${monthR.length!==1?'s':''}`;
+  if(m.includes('recebeu mais')||m.includes('ranking'))return rank.length===0?'Sem dados.':`🏆 Top:\n\n${rank.slice(0,3).map(([n,l],i)=>`${['🥇','🥈','🥉'][i]} *${n}*: ${fL(l)}`).join('\n')}`;
+  if(m.includes('obrigad')||m.includes('valeu'))return'De nada! 😊';
+  return'Não entendi. 🤔 Digite *ajuda*!';
+}
 
-    // UTILS
-    document.addEventListener('DOMContentLoaded',()=>{
-      const fPriceEl=document.getElementById('fPrice');
-      if(fPriceEl)fPriceEl.addEventListener('input',function(e){let v=e.target.value.replace(/\D/g,'');if(v===''){e.target.value='';return;}e.target.value=(parseInt(v,10)/100).toFixed(2).replace('.',',');});
-    });
-    window.addEventListener('online',()=>document.getElementById('offlineBanner').classList.remove('show'));
-    window.addEventListener('offline',()=>document.getElementById('offlineBanner').classList.add('show'));
+// UTILS
+document.addEventListener('DOMContentLoaded',()=>{
+  const fPriceEl=document.getElementById('fPrice');
+  if(fPriceEl)fPriceEl.addEventListener('input',function(e){let v=e.target.value.replace(/\D/g,'');if(v===''){e.target.value='';return;}e.target.value=(parseInt(v,10)/100).toFixed(2).replace('.',',');});
+});
+window.addEventListener('online',()=>document.getElementById('offlineBanner').classList.remove('show'));
+window.addEventListener('offline',()=>document.getElementById('offlineBanner').classList.add('show'));
 
-    const fL=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' L';
-    const fR=n=>'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const todayStr=()=>new Date().toISOString().split('T')[0];
-    const toStr=d=>d.toISOString().split('T')[0];
-    const esc=t=>{const d=document.createElement('div');d.textContent=t;return d.innerHTML;};
-    const fDate=s=>new Date(s+'T00:00:00').toLocaleDateString('pt-BR');
-    const fMonth=ym=>new Date(ym+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+const fL=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' L';
+const fR=n=>'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const todayStr=()=>new Date().toISOString().split('T')[0];
+const toStr=d=>d.toISOString().split('T')[0];
+const esc=t=>{const d=document.createElement('div');d.textContent=t;return d.innerHTML;};
+const fDate=s=>new Date(s+'T00:00:00').toLocaleDateString('pt-BR');
+const fMonth=ym=>new Date(ym+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
-    function toast(msg,type='default'){
-      const el=document.getElementById('toast');
-      el.textContent=msg;
-      el.style.background=type==='success'?'var(--green)':'var(--stone)';
-      el.classList.add('show');
-      setTimeout(()=>el.classList.remove('show'),2800);
-    }
-  </script>
+function toast(msg,type='default'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.background=type==='success'?'var(--green)':'var(--stone)';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2800);
+}
+</script>
 </body>
 </html>
