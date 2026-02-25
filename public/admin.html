@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <title>Leite Certo — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  import { getFirestore, collection, doc, addDoc, getDocs, getDoc, updateDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3V00Qj405tjwCt7Ec9JSYVQ6-otl06XE",
+    authDomain: "leite-certo-e92dd.firebaseapp.com",
+    projectId: "leite-certo-e92dd",
+    storageBucket: "leite-certo-e92dd.firebasestorage.app",
+    messagingSenderId: "375379213395",
+    appId: "1:375379213395:web:e09d6815dba946471fdaa6"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  window.auth = getAuth(fbApp);
+  window.db   = getFirestore(fbApp);
+  window.fbFns = { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, collection, doc, addDoc, getDocs, getDoc, updateDoc, query, where, orderBy, writeBatch };
+  </script>
+  <style>
+    :root{--bg:#0a0a0a;--surface:#111111;--card:#181818;--border:#2a2a2a;--text:#f0f0f0;--muted:#666666;--green:#22c55e;--green-dk:#16a34a;--green-lt:rgba(34,197,94,.12);--gold:#f59e0b;--gold-lt:rgba(245,158,11,.12);--blue:#3b82f6;--blue-lt:rgba(59,130,246,.12);--red:#ef4444;--red-lt:rgba(239,68,68,.12);--orange:#f97316;--orange-lt:rgba(249,115,22,.12);--r:10px}
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;transition:opacity .4s}
+    .spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #loading p{color:var(--muted);font-size:13px;font-family:'DM Mono',monospace}
+    #authScreen{display:none;min-height:100vh;background:var(--bg);align-items:center;justify-content:center;padding:24px}
+    #authScreen.active{display:flex}
+    .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 28px;max-width:380px;width:100%;animation:slideUp .4s ease}
+    .auth-logo{text-align:center;margin-bottom:28px}
+    .auth-badge{display:inline-block;background:var(--green-lt);color:var(--green);border:1px solid rgba(34,197,94,.3);border-radius:99px;padding:4px 12px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:.1em;margin-bottom:12px}
+    .auth-logo h1{font-family:'Syne',sans-serif;font-size:26px;margin-bottom:4px}
+    .auth-logo p{color:var(--muted);font-size:13px}
+    .auth-alert{padding:12px 14px;border-radius:var(--r);margin-bottom:16px;font-size:13px;font-weight:600;display:none}
+    .auth-alert.show{display:block}
+    .auth-alert.error{background:var(--red-lt);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+    .auth-alert.success{background:var(--green-lt);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+    #app{display:none;min-height:100vh;flex-direction:column}
+    #app.active{display:flex}
+    .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+    .header-left{display:flex;align-items:center;gap:10px}
+    .header-badge{background:var(--green-lt);color:var(--green);border:1px solid rgba(34,197,94,.3);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:.08em}
+    .header-title{font-family:'Syne',sans-serif;font-size:17px}
+    .btn-logout-top{background:var(--red-lt);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+    .bnav-btn{flex:1;padding:10px 4px 12px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:10px;font-weight:700;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .2s;border-top:2px solid transparent}
+    .bnav-btn .bicon{font-size:20px}
+    .bnav-btn.active{color:var(--green);border-top-color:var(--green)}
+    .main{flex:1;padding:16px;padding-bottom:84px;overflow-y:auto}
+    .page-hdr{margin-bottom:18px}
+    .page-title{font-family:'Syne',sans-serif;font-size:22px;margin-bottom:2px}
+    .page-sub{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+
+    #pageTransition{position:fixed;bottom:0;left:0;width:100%;height:0;background:var(--green);z-index:99999;pointer-events:none;transition:height .6s cubic-bezier(.65,0,.35,1);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    #pageTransition.active{height:100vh}
+    #pageTransition .transition-logo{opacity:0;transform:scale(.5);transition:all .4s ease .3s;font-size:64px}
+    #pageTransition.active .transition-logo{opacity:1;transform:scale(1)}
+    .tab-content{display:none;animation:fadeIn .3s ease}
+    .tab-content.active{display:block}
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+    .stat-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;position:relative;overflow:hidden}
+    .stat-box::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px}
+    .stat-box.green::before{background:var(--green)}
+    .stat-box.gold::before{background:var(--gold)}
+    .stat-box.blue::before{background:var(--blue)}
+    .stat-box.red::before{background:var(--red)}
+    .stat-icon{font-size:18px;margin-bottom:8px}
+    .stat-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:3px;line-height:1.2}
+    .stat-box.green .stat-val{color:var(--green)}
+    .stat-box.gold .stat-val{color:var(--gold)}
+    .stat-box.blue .stat-val{color:var(--blue)}
+    .stat-box.red .stat-val{color:var(--red)}
+    .stat-lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .section-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+    .section-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+    .section-title{font-family:'Syne',sans-serif;font-size:14px}
+    .section-count{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+    .search-input{width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);outline:none;margin-bottom:12px;transition:border .2s}
+    .search-input:focus{border-color:var(--green)}
+    .search-input::placeholder{color:var(--muted)}
+    .user-card{padding:14px 16px;border-bottom:1px solid var(--border)}
+    .user-card:last-child{border-bottom:none}
+    .user-card.blocked-card{border-left:3px solid var(--red)}
+    .user-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+    .user-name{font-size:15px;font-weight:700;color:var(--text)}
+    .user-email{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;word-break:break-all;margin-bottom:6px}
+    .user-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .user-date{font-size:11px;color:var(--muted);margin-bottom:8px}
+    .user-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .rec-card{padding:14px 16px;border-bottom:1px solid var(--border)}
+    .rec-card:last-child{border-bottom:none}
+    .rec-name{font-size:15px;font-weight:700;margin-bottom:6px}
+    .rec-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;align-items:center;margin-bottom:8px}
+    .badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace}
+    .badge-green{background:var(--green-lt);color:var(--green)}
+    .badge-gold{background:var(--gold-lt);color:var(--gold)}
+    .badge-blue{background:var(--blue-lt);color:var(--blue)}
+    .badge-red{background:var(--red-lt);color:var(--red)}
+    .badge-orange{background:var(--orange-lt);color:var(--orange)}
+    .btn{padding:7px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid;transition:all .2s}
+    .btn-del{background:var(--red-lt);color:var(--red);border-color:rgba(239,68,68,.3)}
+    .btn-edit{background:var(--blue-lt);color:var(--blue);border-color:rgba(59,130,246,.3)}
+    .btn-block{background:var(--orange-lt);color:var(--orange);border-color:rgba(249,115,22,.3)}
+    .btn-unblock{background:var(--green-lt);color:var(--green);border-color:rgba(34,197,94,.3)}
+    .btn-reset{background:var(--gold-lt);color:var(--gold);border-color:rgba(245,158,11,.3)}
+    .btn-view{background:var(--blue-lt);color:var(--blue);border-color:rgba(59,130,246,.3)}
+    .btn-add{background:var(--green);color:#000;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+    .btn-primary{padding:12px;background:var(--green);color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%}
+    .btn-secondary{padding:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;margin-top:8px}
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace}
+    .form-input{width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;color:var(--text);outline:none;transition:border .2s}
+    .form-input:focus{border-color:var(--green)}
+    .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+    .chart-lbl{font-family:'Syne',sans-serif;font-size:13px;margin-bottom:14px}
+    .bar-row{display:grid;grid-template-columns:36px 1fr 68px;align-items:center;gap:8px;margin-bottom:9px}
+    .bar-label{font-size:10px;color:var(--muted);text-align:right;font-family:'DM Mono',monospace}
+    .bar-track{background:var(--surface);border-radius:3px;height:8px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+    .bar-green{background:linear-gradient(90deg,var(--green),#16a34a)}
+    .bar-gold{background:linear-gradient(90deg,var(--gold),#d97706)}
+    .bar-value{font-size:10px;color:var(--text);font-family:'DM Mono',monospace}
+    .rank-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+    .rank-item:last-child{border-bottom:none}
+    .rank-pos{font-size:20px;min-width:28px;text-align:center}
+    .rank-name{font-weight:700;font-size:14px;flex:1}
+    .rank-info{font-size:11px;color:var(--muted);margin-top:2px}
+    .empty{padding:40px 20px;text-align:center;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px}
+    .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:0}
+    .detail-header{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+    .detail-name{font-family:'Syne',sans-serif;font-size:20px;margin-bottom:4px}
+    .detail-email{font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:10px;word-break:break-all}
+    .detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:flex-end;justify-content:center;z-index:800;padding:0}
+    .modal-overlay.active{display:flex;animation:fadeIn .2s ease}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;animation:slideUp .3s ease}
+    .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+    .modal-title{font-family:'Syne',sans-serif;font-size:18px;margin-bottom:20px}
+    #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:all .3s;z-index:9000;white-space:nowrap;pointer-events:none}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+    /* EMAIL TRUNCATE */
+    .user-email{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block}
+
+    /* ANIMATED BARS */
+    .bar-fill{transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+    /* RIPPLE */
+    .btn,.btn-add,.btn-logout-top,.bnav-btn{position:relative;overflow:hidden}
+    .btn::after,.btn-add::after,.btn-logout-top::after{content:"";position:absolute;top:50%;left:50%;width:0;height:0;background:rgba(255,255,255,.2);border-radius:50%;transform:translate(-50%,-50%);transition:width .3s,height .3s,opacity .5s;opacity:0}
+    .btn:active::after,.btn-add:active::after,.btn-logout-top:active::after{width:200px;height:200px;opacity:1;transition:0s}
+
+    /* TOAST */
+    .toast-inner{display:flex;align-items:center;gap:8px}
+    .check-svg{width:20px;height:20px;flex-shrink:0}
+    .check-circle{stroke-dasharray:166;stroke-dashoffset:166;animation:drawStroke .5s cubic-bezier(.65,0,.45,1) forwards}
+    .check-path{stroke-dasharray:48;stroke-dashoffset:48;animation:drawStroke .3s cubic-bezier(.65,0,.45,1) .5s forwards}
+    @keyframes drawStroke{100%{stroke-dashoffset:0}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .btn-orange{background:var(--orange-lt);color:var(--orange);border-color:rgba(249,115,22,.3)}
+    .btn-restore{background:var(--green-lt);color:var(--green);border:1px solid rgba(34,197,94,.3);padding:7px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  </style>
+</head>
+<body>
+
+<div id="pageTransition"><div class="transition-logo">🐄</div></div>
+
+<div id="loading"><div class="spinner"></div><p>verificando acesso...</p></div>
+
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-badge">ACESSO RESTRITO</div>
+      <div style="margin:12px 0"><svg width="36" height="36" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="25" y="45" width="50" height="40" rx="8" fill="#16a34a"/><path d="M35,45 V30 A15,15 0 0,1 65,30 V45" fill="none" stroke="#14532d" stroke-width="8" stroke-linecap="round"><animate attributeName="d" values="M35,45 V30 A15,15 0 0,1 65,30 V45;M35,45 V20 A15,15 0 0,1 65,20 V35;M35,45 V30 A15,15 0 0,1 65,30 V45" dur="3s" repeatCount="indefinite"/></path><circle cx="50" cy="65" r="5" fill="#ffffff"/><path d="M50,70 L50,78" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/></svg></div>
+      <h1>🐄 Leite Certo</h1>
+      <p>Painel Administrativo</p>
+    </div>
+    <div class="auth-alert" id="authAlert"></div>
+    <div class="form-group">
+      <label class="form-label">E-mail Admin</label>
+      <input type="email" id="loginEmail" class="form-input" placeholder="seu@email.com" maxlength="150"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input type="password" id="loginPass" class="form-input" placeholder="••••••••" maxlength="100"/>
+    </div>
+    <button class="btn-primary" id="btnLogin">Entrar no painel →</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="app-header">
+    <div class="header-left">
+      <span class="header-badge">ADMIN</span>
+      <span class="header-title">🐄 Leite Certo</span>
+    </div>
+    <button class="btn-logout-top" id="btnLogout">⏏ Sair</button>
+  </div>
+
+  <div class="main">
+
+    <div id="tab-dashboard" class="tab-content active">
+      <div class="page-hdr"><div class="page-title">Dashboard</div><div class="page-sub">visão geral do sistema</div></div>
+      <div class="stats-grid" id="dashStats"></div>
+      <div class="chart-wrap"><div class="chart-lbl">📅 Entregas por mês</div><div id="dashChart"></div></div>
+      <div class="section-card">
+        <div class="section-hdr"><span class="section-title">🏆 Top clientes</span></div>
+        <div id="topClientes"></div>
+      </div>
+    </div>
+
+    <div id="tab-usuarios" class="tab-content">
+      <div class="page-hdr">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="page-title">Usuários</div>
+          <button class="btn-add" id="btnAddUser">+ Adicionar</button>
+        </div>
+        <div class="page-sub">gerencie todos os cadastrados</div>
+      </div>
+      <input class="search-input" id="searchUsuarios" placeholder="🔍 Buscar por nome ou e-mail…"/>
+      <div class="section-card">
+        <div class="section-hdr">
+          <span class="section-title">👥 Usuários</span>
+          <span class="section-count" id="usuariosCount"></span>
+        </div>
+        <div id="usuariosList"></div>
+      </div>
+    </div>
+
+    <div id="tab-usuario-detalhe" class="tab-content">
+      <button class="back-btn" id="btnBackUsuarios">← Voltar</button>
+      <div id="detalheContent"></div>
+    </div>
+
+    <div id="tab-registros" class="tab-content">
+      <div class="page-hdr">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="page-title">Registros</div>
+          <div style="display:flex;gap:6px">
+            <button id="btnViewPorUsuario" class="btn-add" style="font-size:11px;background:var(--blue)">👥 Por Usuário</button>
+            <button id="btnViewTodos" class="btn-add" style="font-size:11px;display:none">📋 Todos</button>
+          </div>
+        </div>
+        <div class="page-sub">todas as entregas do sistema</div>
+      </div>
+      <input class="search-input" id="searchRegistros" placeholder="🔍 Buscar por cliente…"/>
+      <div id="registrosWrapper">
+        <div class="section-card">
+          <div class="section-hdr">
+            <span class="section-title">📋 Entregas</span>
+            <span class="section-count" id="registrosCount"></span>
+          </div>
+          <div id="registrosList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-lixeira" class="tab-content">
+      <div class="page-hdr">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="page-title">🗑️ Lixeira</div>
+          <button class="btn-add" id="btnRestoreAll" style="background:var(--orange);font-size:11px">♻️ Restaurar Todos</button>
+        </div>
+        <div class="page-sub">registros apagados — podem ser restaurados</div>
+      </div>
+      <input class="search-input" id="searchLixeira" placeholder="🔍 Buscar nos apagados…"/>
+      <div class="section-card">
+        <div class="section-hdr">
+          <span class="section-title">🗑️ Apagados</span>
+          <span class="section-count" id="lixeiraCount"></span>
+        </div>
+        <div id="lixeiraList"></div>
+      </div>
+    </div>
+
+    <div id="tab-relatorios" class="tab-content">
+      <div class="page-hdr"><div class="page-title">Relatórios</div><div class="page-sub">análise completa</div></div>
+      <div class="stats-grid" id="relStats"></div>
+      <div class="chart-wrap"><div class="chart-lbl">🥛 Litros por mês</div><div id="relChartL"></div></div>
+      <div class="chart-wrap"><div class="chart-lbl">💰 Receita por mês</div><div id="relChartR"></div></div>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <button class="bnav-btn active" id="bnav-dashboard"><span class="bicon">📊</span>Dashboard</button>
+    <button class="bnav-btn" id="bnav-usuarios"><span class="bicon">👥</span>Usuários</button>
+    <button class="bnav-btn" id="bnav-registros"><span class="bicon">📋</span>Registros</button>
+    <button class="bnav-btn" id="bnav-lixeira"><span class="bicon">🗑️</span>Lixeira</button>
+    <button class="bnav-btn" id="bnav-relatorios"><span class="bicon">📈</span>Relatórios</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalAddUser">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👤 Adicionar Usuário</div>
+    <div class="auth-alert" id="addUserAlert"></div>
+    <div class="form-group"><label class="form-label">Nome</label><input type="text" id="addName" class="form-input" placeholder="Nome do usuário" maxlength="100"/></div>
+    <div class="form-group"><label class="form-label">E-mail *</label><input type="email" id="addEmail" class="form-input" placeholder="email@exemplo.com" maxlength="150"/></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input type="tel" id="addPhone" class="form-input" placeholder="(00) 00000-0000" maxlength="20"/></div>
+    <div class="form-group"><label class="form-label">Senha *</label><input type="password" id="addPass" class="form-input" placeholder="Mínimo 6 caracteres" maxlength="100"/></div>
+    <button class="btn-primary" id="btnDoAdd">✓ Criar usuário</button>
+    <button class="btn-secondary" id="btnCancelAdd">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalEditUser">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Editar Perfil</div>
+    <div class="auth-alert" id="editUserAlert"></div>
+    <input type="hidden" id="editUserId"/>
+    <div class="form-group"><label class="form-label">ID do usuário</label><input type="text" id="editCustomId" class="form-input" readonly style="opacity:.5;cursor:not-allowed"/></div>
+    <div class="form-group"><label class="form-label">Nome</label><input type="text" id="editName" class="form-input" placeholder="Nome do usuário" maxlength="100"/></div>
+    <div class="form-group"><label class="form-label">Telefone</label><input type="tel" id="editPhone" class="form-input" placeholder="(00) 00000-0000" maxlength="20"/></div>
+    <div class="form-group"><label class="form-label">E-mail</label><input type="email" id="editEmail" class="form-input" placeholder="email@exemplo.com" maxlength="150"/></div>
+    <button class="btn-primary" id="btnDoEdit">💾 Salvar</button>
+    <button class="btn-secondary" id="btnCancelEdit">Cancelar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+function waitFb(cb){if(window.auth&&window.db&&window.fbFns)cb();else setTimeout(()=>waitFb(cb),50);}
+const ADMIN_EMAILS = []; // lista de emails admin - deixe vazio para usar coleção "admins" no Firestore
+
+// Firebase initialized in module script above
+
+let allRecords=[], allProfiles=[], allDeleted=[];
+
+// ─── BOOT ───
+window.addEventListener('load', ()=>{
+  waitFb(()=>{
+    const{onAuthStateChanged}=window.fbFns;
+    onAuthStateChanged(window.auth, async(user)=>{
+      hideLoading();
+      if(user){
+        const ok=await checkAdmin(user);
+        if(ok) await startApp(user);
+        else{await window.fbFns.signOut(window.auth);showAuth('Você não tem acesso de administrador.');}
+      } else showAuth();
+    });
+    bindEvents();
+  });
+});
+
+function hideLoading(){const l=document.getElementById('loading');l.style.opacity='0';setTimeout(()=>l.style.display='none',400);}
+async function checkAdmin(user){
+  try{
+    const{collection,query,where,getDocs}=window.fbFns;
+    const q=query(collection(window.db,'admins'),where('uid','==',user.uid));
+    const snap=await getDocs(q);
+    return!snap.empty;
+  }catch(e){return false;}
+}
+
+async function startApp(user){
+  document.getElementById('authScreen').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+  await loadAllData();
+  renderDashboard();
+  resetInactivityTimer();
+}
+
+function showAuth(err){
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('authScreen').classList.add('active');
+  if(err){const a=document.getElementById('authAlert');a.textContent=err;a.className='auth-alert error show';}
+}
+
+// ─── BIND ALL EVENTS ───
+function bindEvents(){
+  // Auth
+  document.getElementById('btnLogin').addEventListener('click', doLogin);
+  document.getElementById('loginEmail').addEventListener('keydown', e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('loginPass').addEventListener('keydown', e=>{if(e.key==='Enter')doLogin();});
+
+  // Header
+  document.getElementById('btnLogout').addEventListener('click', doLogout);
+
+  // Usuarios
+  document.getElementById('btnAddUser').addEventListener('click', openAddUserModal);
+  document.getElementById('searchUsuarios').addEventListener('input', e=>filterUsuarios(e.target.value));
+  document.getElementById('btnBackUsuarios').addEventListener('click', ()=>switchTab('usuarios'));
+  document.getElementById('searchRegistros').addEventListener('input', e=>filterRegistros(e.target.value));
+
+  // Bottom nav
+  document.getElementById('bnav-dashboard').addEventListener('click', ()=>switchTab('dashboard'));
+  document.getElementById('bnav-usuarios').addEventListener('click', ()=>switchTab('usuarios'));
+  document.getElementById('bnav-registros').addEventListener('click', ()=>switchTab('registros'));
+  document.getElementById('bnav-relatorios').addEventListener('click', ()=>switchTab('relatorios'));
+
+  // Modal Add
+  document.getElementById('modalAddUser').addEventListener('click', e=>{if(e.target===e.currentTarget)closeModal('modalAddUser');});
+  document.getElementById('btnDoAdd').addEventListener('click', doAddUser);
+  document.getElementById('btnCancelAdd').addEventListener('click', ()=>closeModal('modalAddUser'));
+
+  // Modal Edit
+  document.getElementById('modalEditUser').addEventListener('click', e=>{if(e.target===e.currentTarget)closeModal('modalEditUser');});
+  document.getElementById('btnDoEdit').addEventListener('click', doEditUser);
+  document.getElementById('btnCancelEdit').addEventListener('click', ()=>closeModal('modalEditUser'));
+
+  // Lixeira
+  document.getElementById('searchLixeira')?.addEventListener('input', e=>renderLixeira(e.target.value));
+  document.getElementById('btnRestoreAll')?.addEventListener('click', restoreAll);
+
+  // Registros view toggle
+  document.getElementById('btnViewPorUsuario')?.addEventListener('click', ()=>renderRegistrosPorUsuario());
+  document.getElementById('btnViewTodos')?.addEventListener('click', ()=>{
+    document.getElementById('btnViewPorUsuario').style.display='';
+    document.getElementById('btnViewTodos').style.display='none';
+    renderRegistros();
+  });
+
+  // Lixeira nav
+  document.getElementById('bnav-lixeira')?.addEventListener('click', ()=>switchTab('lixeira'));
+
+  // Dynamic buttons via event delegation
+  document.addEventListener('click', e=>{
+    const btn=e.target.closest('[data-action]');
+    if(!btn)return;
+    const{action,id,email,blocked,fromdetail,userid}=btn.dataset;
+    if(action==='view')   openUserDetail(id);
+    if(action==='edit')   openEditModal(id);
+    if(action==='reset')  resetPassword(email);
+    if(action==='block')  toggleBlock(id, blocked==='true');
+    if(action==='delete') deleteRecord(id, fromdetail==='true', userid);
+    if(action==='restore') restoreRecord(id);
+  });
+}
+
+// ─── AUTH ───
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!email||!pass){showAuthAlert('Preencha e-mail e senha.');return;}
+  try{
+    const{signInWithEmailAndPassword}=window.fbFns;
+    const cred=await signInWithEmailAndPassword(window.auth,email,pass);
+    const ok=await checkAdmin(cred.user);
+    if(!ok){await window.fbFns.signOut(window.auth);showAuthAlert('Você não tem acesso de administrador.');return;}
+    await startApp(cred.user);
+  }catch(e){showAuthAlert('E-mail ou senha incorretos.');}
+}
+
+async function doLogout(){
+  if(!confirm('Sair do painel?'))return;
+  await window.fbFns.signOut(window.auth);
+  showAuth();
+}
+
+function showAuthAlert(msg){const a=document.getElementById('authAlert');a.textContent=msg;a.className='auth-alert error show';}
+
+// ─── DATA ───
+async function loadAllData(){
+  const{collection,query,where,orderBy,getDocs}=window.fbFns;
+  const [snapRecs,snapProfiles,snapDeleted]=await Promise.all([
+    getDocs(query(collection(window.db,'entregas'),where('deleted_at','==',null),orderBy('date','desc'))),
+    getDocs(collection(window.db,'profiles')),
+    getDocs(query(collection(window.db,'entregas'),where('deleted_at','!=',null),orderBy('deleted_at','desc')))
+  ]);
+  allRecords=snapRecs.docs.map(d=>({id:d.id,...d.data()}));
+  allProfiles=snapProfiles.docs.map(d=>({id:d.id,...d.data()}));
+  allDeleted=snapDeleted.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+async function logAction(action,targetId,details){
+  try{
+    const user=window.auth.currentUser;
+    if(!user)return;
+    const{collection,addDoc}=window.fbFns;
+    await addDoc(collection(window.db,'admin_logs'),{admin_id:user.uid,action,target_id:targetId||null,details:details||null,created_at:new Date().toISOString()});
+  }catch(e){}
+}
+
+// ─── TABS ───
+function switchTab(name){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const idx=['dashboard','usuarios','registros','lixeira','relatorios'].indexOf(name);
+  if(idx>=0) document.querySelectorAll('.bnav-btn')[idx].classList.add('active');
+  if(name==='dashboard')  renderDashboard();
+  if(name==='usuarios')   renderUsuarios();
+  if(name==='registros')  renderRegistros();
+  if(name==='lixeira')    renderLixeira();
+  if(name==='relatorios') renderRelatorios();
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+function showModalAlert(id,msg){const a=document.getElementById(id);a.textContent=msg;a.className='auth-alert error show';}
+
+// ─── DASHBOARD ───
+function renderDashboard(){
+  const tL=allRecords.reduce((s,r)=>s+r.quantity,0);
+  const tR=allRecords.reduce((s,r)=>s+r.quantity*(r.price||0),0);
+  const cnt=allRecords.length,users=allProfiles.length;
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat-box green"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><defs><clipPath id="mc"><path d="M35,30 C35,20 65,20 65,30 L65,40 C65,45 75,55 75,85 C75,95 25,95 25,85 C25,55 35,45 35,40 Z"/></clipPath></defs><path d="M35,30 C35,20 65,20 65,30 L65,40 C65,45 75,55 75,85 C75,95 25,95 25,85 C25,55 35,45 35,40 Z" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="30" y="12" width="40" height="8" rx="4" fill="#14532d"/><rect x="0" y="100" width="100" height="100" fill="#dcfce7" clip-path="url(#mc)"><animate attributeName="y" values="100;45;100" dur="4s" repeatCount="indefinite"/></rect></svg></div><div class="stat-val">${fL(tL)}</div><div class="stat-lbl">Total litros</div></div>
+    <div class="stat-box gold"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><circle cx="50" cy="50" r="40" fill="#fef3c7" stroke="#b45309" stroke-width="6"/><path d="M45,35 L45,65 L55,65 C62,65 62,35 55,35 Z" fill="none" stroke="#b45309" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><line x1="20" y1="20" x2="80" y2="80" stroke="#ffffff" stroke-width="15" opacity="0.4"><animateTransform attributeName="transform" type="translate" values="-80,-80; 80,80" dur="2.5s" repeatCount="indefinite"/></line></svg></div><div class="stat-val">${fR(tR)}</div><div class="stat-lbl">Receita total</div></div>
+    <div class="stat-box blue"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><g><animateTransform attributeName="transform" type="translate" values="0,0; 0,-5; 0,0" dur="2s" repeatCount="indefinite"/><polygon points="50,25 85,40 50,55 15,40" fill="#bae6fd" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/><polygon points="15,40 50,55 50,90 15,75" fill="#e0f2fe" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/><polygon points="85,40 50,55 50,90 85,75" fill="#7dd3fc" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/></g></svg></div><div class="stat-val">${cnt}</div><div class="stat-lbl">Entregas</div></div>
+    <div class="stat-box red"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><circle cx="35" cy="35" r="14" fill="#ef4444"/><path d="M10,72 C10,54 60,54 60,72" fill="none" stroke="#ef4444" stroke-width="9" stroke-linecap="round"/><circle cx="67" cy="30" r="11" fill="#f87171"/><path d="M44,68 C50,53 90,53 90,68" fill="none" stroke="#f87171" stroke-width="8" stroke-linecap="round"/></svg></div><div class="stat-val">${users}</div><div class="stat-lbl">Usuários</div></div>`;
+  const months=getLast12Months(allRecords),maxL=Math.max(...months.map(m=>m.liters),1);
+  const dashChartEl = document.getElementById('dashChart');
+  dashChartEl.innerHTML=months.map(m=>`
+    <div class="bar-row"><span class="bar-label">${m.label}</span>
+    <div class="bar-track"><div class="bar-fill bar-green" style="width:0%" data-target="${(m.liters/maxL*100).toFixed(1)}%"></div></div>
+    <span class="bar-value">${fL(m.liters)}</span></div>`).join('');
+  const byP={};
+  allRecords.forEach(r=>{if(!byP[r.person])byP[r.person]={liters:0,money:0,count:0};byP[r.person].liters+=r.quantity;byP[r.person].money+=r.quantity*(r.price||0);byP[r.person].count+=1;});
+  const ranking=Object.entries(byP).sort((a,b)=>b[1].liters-a[1].liters).slice(0,10);
+  document.getElementById('topClientes').innerHTML=ranking.length===0?'<div class="empty">Nenhum dado ainda</div>':ranking.map(([name,s],i)=>`
+    <div class="rank-item"><span class="rank-pos">${['🥇','🥈','🥉'][i]||'#'+(i+1)}</span>
+    <div><div class="rank-name">${esc(name)}</div><div class="rank-info">${s.count} entrega${s.count!==1?'s':''}</div></div>
+    <div style="text-align:right"><span class="badge badge-green">${fL(s.liters)}</span>${s.money>0?'<br><span class="badge badge-gold" style="margin-top:4px">'+fR(s.money)+'</span>':''}</div></div>`).join('');
+}
+
+// ─── USUARIOS ───
+function renderUsuarios(filter=''){
+  const list=allProfiles.filter(p=>!filter||(p.email||'').toLowerCase().includes(filter.toLowerCase())||(p.name||'').toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('usuariosCount').textContent=list.length+' usuário'+(list.length!==1?'s':'');
+  if(list.length===0){document.getElementById('usuariosList').innerHTML='<div class="empty">Nenhum encontrado</div>';return;}
+  document.getElementById('usuariosList').innerHTML=list.map(p=>{
+    const recs=allRecords.filter(r=>r.user_id===p.id);
+    const liters=recs.reduce((s,r)=>s+r.quantity,0),money=recs.reduce((s,r)=>s+r.quantity*(r.price||0),0);
+    const blocked=p.blocked;
+    return `<div class="user-card${blocked?' blocked-card':''}">
+      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:3px">${esc(p.custom_id||'—')}</div>
+      <div class="user-name">${esc(p.name||'Sem nome')} ${blocked?'<span class="badge badge-red">Bloqueado</span>':''}</div>
+      <div class="user-email">${esc(p.email||'—')}</div>
+      ${p.phone?'<div class="user-date">📞 '+esc(p.phone)+'</div>':''}
+      <div class="user-meta">
+        <span class="badge badge-blue">📦 ${recs.length}</span>
+        <span class="badge badge-green">🥛 ${fL(liters)}</span>
+        ${money>0?'<span class="badge badge-gold">💰 '+fR(money)+'</span>':''}
+      </div>
+      <div class="user-date">Cadastro: ${fDate(p.created_at?.split('T')[0])}</div>
+      <div class="user-actions">
+        <button class="btn btn-view" data-action="view" data-id="${p.id}">👁 Ver</button>
+        <button class="btn btn-edit" data-action="edit" data-id="${p.id}">✏️ Editar</button>
+        <button class="btn btn-reset" data-action="reset" data-email="${esc(p.email||'')}"><svg width="14" height="14" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:3px"><circle cx="30" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="8"/><circle cx="30" cy="50" r="4" fill="currentColor"/><line x1="45" y1="50" x2="85" y2="50" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="75" y1="50" x2="75" y2="65" stroke="currentColor" stroke-width="8" stroke-linecap="round"><animate attributeName="y2" values="65;55;65" dur="1s" repeatCount="indefinite"/></line><line x1="60" y1="50" x2="60" y2="65" stroke="currentColor" stroke-width="8" stroke-linecap="round"><animate attributeName="y2" values="65;55;65" dur="1s" begin="0.5s" repeatCount="indefinite"/></line></svg> Senha</button>
+        <button class="btn ${blocked?'btn-unblock':'btn-block'}" data-action="block" data-id="${p.id}" data-blocked="${blocked}">${blocked?'✓ Desbloquear':'🚫 Bloquear'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterUsuarios(v){renderUsuarios(v);}
+
+// ─── DETALHE USUARIO ───
+function openUserDetail(userId){
+  const p=allProfiles.find(x=>x.id===userId);
+  if(!p)return;
+  const recs=allRecords.filter(r=>r.user_id===userId);
+  const tL=recs.reduce((s,r)=>s+r.quantity,0),tR=recs.reduce((s,r)=>s+r.quantity*(r.price||0),0);
+  const cnt=recs.length,avg=cnt?tL/cnt:0;
+  const months=getLast12Months(recs),maxL=Math.max(...months.map(m=>m.liters),1);
+  const byP={};
+  recs.forEach(r=>{if(!byP[r.person])byP[r.person]={liters:0,count:0};byP[r.person].liters+=r.quantity;byP[r.person].count+=1;});
+  const ranking=Object.entries(byP).sort((a,b)=>b[1].liters-a[1].liters).slice(0,5);
+  const el=document.getElementById('detalheContent');
+  el.innerHTML=`
+    <div class="detail-header">
+      <div class="detail-name">${esc(p.name||'Sem nome')}</div>
+      <div class="detail-email">${esc(p.email||'—')}</div>
+      ${p.phone?'<div style="font-size:13px;color:var(--muted);margin-bottom:10px">📞 '+esc(p.phone)+'</div>':''}
+      <div class="detail-actions">
+        <button class="btn btn-edit" data-action="edit" data-id="${p.id}">✏️ Editar</button>
+        <button class="btn btn-reset" data-action="reset" data-email="${esc(p.email||'')}"><svg width="14" height="14" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:3px"><circle cx="30" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="8"/><circle cx="30" cy="50" r="4" fill="currentColor"/><line x1="45" y1="50" x2="85" y2="50" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="75" y1="50" x2="75" y2="65" stroke="currentColor" stroke-width="8" stroke-linecap="round"><animate attributeName="y2" values="65;55;65" dur="1s" repeatCount="indefinite"/></line><line x1="60" y1="50" x2="60" y2="65" stroke="currentColor" stroke-width="8" stroke-linecap="round"><animate attributeName="y2" values="65;55;65" dur="1s" begin="0.5s" repeatCount="indefinite"/></line></svg> Senha</button>
+        <button class="btn ${p.blocked?'btn-unblock':'btn-block'}" data-action="block" data-id="${p.id}" data-blocked="${p.blocked}">${p.blocked?'✓ Desbloquear':'🚫 Bloquear'}</button>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box green"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><defs><clipPath id="mc"><path d="M35,30 C35,20 65,20 65,30 L65,40 C65,45 75,55 75,85 C75,95 25,95 25,85 C25,55 35,45 35,40 Z"/></clipPath></defs><path d="M35,30 C35,20 65,20 65,30 L65,40 C65,45 75,55 75,85 C75,95 25,95 25,85 C25,55 35,45 35,40 Z" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="30" y="12" width="40" height="8" rx="4" fill="#14532d"/><rect x="0" y="100" width="100" height="100" fill="#dcfce7" clip-path="url(#mc)"><animate attributeName="y" values="100;45;100" dur="4s" repeatCount="indefinite"/></rect></svg></div><div class="stat-val">${fL(tL)}</div><div class="stat-lbl">Litros</div></div>
+      <div class="stat-box gold"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><circle cx="50" cy="50" r="40" fill="#fef3c7" stroke="#b45309" stroke-width="6"/><path d="M45,35 L45,65 L55,65 C62,65 62,35 55,35 Z" fill="none" stroke="#b45309" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><line x1="20" y1="20" x2="80" y2="80" stroke="#ffffff" stroke-width="15" opacity="0.4"><animateTransform attributeName="transform" type="translate" values="-80,-80; 80,80" dur="2.5s" repeatCount="indefinite"/></line></svg></div><div class="stat-val">${fR(tR)}</div><div class="stat-lbl">Receita</div></div>
+      <div class="stat-box blue"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><g><animateTransform attributeName="transform" type="translate" values="0,0; 0,-5; 0,0" dur="2s" repeatCount="indefinite"/><polygon points="50,25 85,40 50,55 15,40" fill="#bae6fd" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/><polygon points="15,40 50,55 50,90 15,75" fill="#e0f2fe" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/><polygon points="85,40 50,55 50,90 85,75" fill="#7dd3fc" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/></g></svg></div><div class="stat-val">${cnt}</div><div class="stat-lbl">Entregas</div></div>
+      <div class="stat-box red"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><polyline points="15,85 35,60 55,70 85,25" fill="none" stroke="#7c3aed" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><animate attributeName="stroke-dasharray" values="0,200;200,0" dur="2s" repeatCount="indefinite"/></polyline><circle cx="85" cy="25" r="7" fill="#5b21b6"><animate attributeName="cy" values="25;15;25" dur="1s" repeatCount="indefinite"/></circle><path d="M10,10 L10,90 L90,90" fill="none" stroke="#333" stroke-width="5" stroke-linecap="round"/></svg></div><div class="stat-val">${fL(avg)}</div><div class="stat-lbl">Média</div></div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-lbl">📅 Entregas por mês</div>
+      ${months.map(m=>`<div class="bar-row"><span class="bar-label">${m.label}</span><div class="bar-track"><div class="bar-fill bar-green" style="width:${(m.liters/maxL*100).toFixed(1)}%"></div></div><span class="bar-value">${fL(m.liters)}</span></div>`).join('')}
+    </div>
+    <div class="section-card">
+      <div class="section-hdr"><span class="section-title">🏆 Clientes atendidos</span></div>
+      ${ranking.length===0?'<div class="empty">Sem dados</div>':ranking.map(([name,s],i)=>`
+        <div class="rank-item"><span class="rank-pos">${['🥇','🥈','🥉'][i]||'#'+(i+1)}</span>
+        <div><div class="rank-name">${esc(name)}</div><div class="rank-info">${s.count} entrega${s.count!==1?'s':''}</div></div>
+        <span class="badge badge-green">${fL(s.liters)}</span></div>`).join('')}
+    </div>
+    <div class="section-card">
+      <div class="section-hdr"><span class="section-title">📋 Todas as entregas</span><span class="section-count">${recs.length} registro${recs.length!==1?'s':''}</span></div>
+      ${recs.length===0?'<div class="empty">Sem entregas</div>':recs.map(r=>`
+        <div class="rec-card">
+          <div class="rec-name">${esc(r.person)}</div>
+          <div class="rec-meta">
+            <span class="badge badge-green">🥛 ${fL(r.quantity)}</span>
+            ${r.price>0?'<span class="badge badge-gold">💰 '+fR(r.quantity*r.price)+'</span>':''}
+            <span style="color:var(--muted);font-size:11px;font-family:'DM Mono',monospace"><svg width="13" height="13" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:sub;margin-right:3px"><rect x="20" y="30" width="60" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="8"/><line x1="20" y1="50" x2="80" y2="50" stroke="currentColor" stroke-width="8"/><line x1="35" y1="15" x2="35" y2="35" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="65" y1="15" x2="65" y2="35" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><rect x="30" y="60" width="15" height="15" rx="3" fill="#16a34a"><animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0,-10; 0,0; 0,0; 0,0" dur="2s" repeatCount="indefinite"/></rect></svg>${fDate(r.date)}</span>
+          </div>
+          <button class="btn btn-del" data-action="delete" data-id="${r.id}" data-fromdetail="true" data-userid="${userId}"><svg width="14" height="14" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:3px"><path d="M25,30 L75,30 L70,90 C70,95 65,95 65,95 L35,95 C35,95 30,95 30,90 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15,30 L85,30" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path d="M40,30 L40,20 C40,15 60,15 60,20 L60,30" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><animateTransform attributeName="transform" type="rotate" values="0 50 30; -8 50 30; 0 50 30" dur="2s" repeatCount="indefinite"/></path><line x1="40" y1="45" x2="40" y2="75" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><line x1="60" y1="45" x2="60" y2="75" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg> Apagar</button>
+        </div>`).join('')}
+    </div>`;
+  switchTab('usuario-detalhe');
+}
+
+// ─── ADICIONAR USUARIO ───
+function openAddUserModal(){
+  ['addName','addEmail','addPhone','addPass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('addUserAlert').className='auth-alert';
+  document.getElementById('modalAddUser').classList.add('active');
+}
+
+async function doAddUser(){
+  const name=document.getElementById('addName').value.trim().substring(0,100);
+  const email=document.getElementById('addEmail').value.trim().substring(0,150);
+  const phone=document.getElementById('addPhone').value.replace(/\D/g,'').substring(0,20);
+  const pass=document.getElementById('addPass').value;
+  if(!email||!pass){showModalAlert('addUserAlert','Preencha e-mail e senha.');return;}
+  if(pass.length<6){showModalAlert('addUserAlert','Senha deve ter no mínimo 6 caracteres.');return;}
+  if(!/[0-9]/.test(pass)||!/[a-zA-Z]/.test(pass)){showModalAlert('addUserAlert','Senha deve ter letras e números.');return;}
+  try{
+    const{createUserWithEmailAndPassword,collection,addDoc}=window.fbFns;
+    const cred=await createUserWithEmailAndPassword(window.auth,email,pass);
+    await addDoc(collection(window.db,'profiles'),{uid:cred.user.uid,name,phone:phone||null,email,blocked:false,created_at:new Date().toISOString()});
+    const data={user:cred.user};
+  await logAction('criar_usuario',data?.user?.id,email);
+  toast('Usuário criado! ✅','success');
+  closeModal('modalAddUser');
+  await loadAllData();
+  renderUsuarios();
+}
+
+// ─── EDITAR USUARIO ───
+function openEditModal(userId){
+  const p=allProfiles.find(x=>x.id===userId);
+  if(!p)return;
+  document.getElementById('editUserId').value=userId;
+  document.getElementById('editCustomId').value=p.custom_id||'—';
+  document.getElementById('editName').value=p.name||'';
+  document.getElementById('editPhone').value=p.phone||'';
+  document.getElementById('editEmail').value=p.email||'';
+  document.getElementById('editUserAlert').className='auth-alert';
+  document.getElementById('modalEditUser').classList.add('active');
+}
+
+async function doEditUser(){
+  const id=document.getElementById('editUserId').value;
+  const name=document.getElementById('editName').value.trim().substring(0,100);
+  const phone=document.getElementById('editPhone').value.replace(/\D/g,'').substring(0,20);
+  const email=document.getElementById('editEmail').value.trim().substring(0,150);
+  try{
+    const{collection,query,where,getDocs,doc,updateDoc}=window.fbFns;
+    const q=query(collection(window.db,'profiles'),where('uid','==',id));
+    const snap=await getDocs(q);
+    if(snap.empty){showModalAlert('editUserAlert','Usuário não encontrado.');return;}
+    await updateDoc(snap.docs[0].ref,{name,phone,email});
+  }catch(e){showModalAlert('editUserAlert','Erro ao salvar.');return;}
+  await logAction('editar_perfil',id,'nome/telefone/email atualizado');
+  toast('Perfil atualizado! ✅','success');
+  closeModal('modalEditUser');
+  await loadAllData();
+  renderUsuarios();
+}
+
+// ─── BLOQUEAR ───
+async function toggleBlock(userId,blocked){
+  if(!confirm('Deseja '+(blocked?'desbloquear':'bloquear')+' este usuário?'))return;
+  try{
+    const{collection,query,where,getDocs,updateDoc}=window.fbFns;
+    const q=query(collection(window.db,'profiles'),where('uid','==',userId));
+    const snap=await getDocs(q);
+    if(!snap.empty)await updateDoc(snap.docs[0].ref,{blocked:!blocked});
+  }catch(e){toast('⚠️ Erro ao salvar.');return;}
+  await logAction(blocked?'desbloquear_usuario':'bloquear_usuario',userId);
+  toast(blocked?'Usuário desbloqueado ✅':'Usuário bloqueado 🚫');
+  await loadAllData();
+  renderUsuarios();
+}
+
+// ─── RESET SENHA ───
+async function resetPassword(email){
+  if(!email){toast('⚠️ E-mail não encontrado');return;}
+  if(!confirm('Enviar link de recuperação para '+email+'?'))return;
+  try{
+    const{sendPasswordResetEmail}=window.fbFns;
+    await sendPasswordResetEmail(window.auth,email);
+  }catch(e){toast('⚠️ Erro ao enviar.');return;}
+  toast('Link enviado! ✅','success');
+}
+
+// ─── REGISTROS ───
+function renderRegistros(filter=''){
+  const list=allRecords.filter(r=>!filter||r.person.toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('registrosCount').textContent=list.length+' registro'+(list.length!==1?'s':'');
+  document.getElementById('registrosList').innerHTML=list.length===0?'<div class="empty">Nenhum encontrado</div>':list.map(r=>`
+    <div class="rec-card">
+      <div class="rec-name">${esc(r.person)}</div>
+      <div class="rec-meta">
+        <span class="badge badge-green">🥛 ${fL(r.quantity)}</span>
+        ${r.price>0?'<span class="badge badge-gold">💰 '+fR(r.quantity*r.price)+'</span>':''}
+        <span style="color:var(--muted);font-size:11px;font-family:'DM Mono',monospace"><svg width="13" height="13" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:sub;margin-right:3px"><rect x="20" y="30" width="60" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="8"/><line x1="20" y1="50" x2="80" y2="50" stroke="currentColor" stroke-width="8"/><line x1="35" y1="15" x2="35" y2="35" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="65" y1="15" x2="65" y2="35" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><rect x="30" y="60" width="15" height="15" rx="3" fill="#16a34a"><animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0,-10; 0,0; 0,0; 0,0" dur="2s" repeatCount="indefinite"/></rect></svg>${fDate(r.date)}</span>
+      </div>
+      <button class="btn btn-del" data-action="delete" data-id="${r.id}" data-fromdetail="false"><svg width="14" height="14" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:3px"><path d="M25,30 L75,30 L70,90 C70,95 65,95 65,95 L35,95 C35,95 30,95 30,90 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15,30 L85,30" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path d="M40,30 L40,20 C40,15 60,15 60,20 L60,30" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><animateTransform attributeName="transform" type="rotate" values="0 50 30; -8 50 30; 0 50 30" dur="2s" repeatCount="indefinite"/></path><line x1="40" y1="45" x2="40" y2="75" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><line x1="60" y1="45" x2="60" y2="75" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg> Apagar</button>
+    </div>`).join('');
+}
+function filterRegistros(v){renderRegistros(v);}
+
+async function deleteRecord(id,fromDetail,userId){
+  if(!confirm('Apagar este registro? (pode ser restaurado depois)'))return;
+  try{
+    const{doc,updateDoc}=window.fbFns;
+    await updateDoc(doc(window.db,'entregas',id),{deleted_at:new Date().toISOString()});
+  }catch(e){toast('⚠️ Erro ao apagar.');return;}
+  await logAction('apagar_registro',id);
+  allRecords=allRecords.filter(r=>r.id!==id);
+  if(fromDetail&&userId) openUserDetail(userId);
+  else renderRegistros();
+  renderDashboard();
+  toast('Registro apagado ✓');
+}
+
+// ─── RELATORIOS ───
+function renderRelatorios(){
+  const tL=allRecords.reduce((s,r)=>s+r.quantity,0),tR=allRecords.reduce((s,r)=>s+r.quantity*(r.price||0),0);
+  const cnt=allRecords.length,avg=cnt?tL/cnt:0;
+  document.getElementById('relStats').innerHTML=`
+    <div class="stat-box green"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><defs><clipPath id="mc"><path d="M35,30 C35,20 65,20 65,30 L65,40 C65,45 75,55 75,85 C75,95 25,95 25,85 C25,55 35,45 35,40 Z"/></clipPath></defs><path d="M35,30 C35,20 65,20 65,30 L65,40 C65,45 75,55 75,85 C75,95 25,95 25,85 C25,55 35,45 35,40 Z" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="30" y="12" width="40" height="8" rx="4" fill="#14532d"/><rect x="0" y="100" width="100" height="100" fill="#dcfce7" clip-path="url(#mc)"><animate attributeName="y" values="100;45;100" dur="4s" repeatCount="indefinite"/></rect></svg></div><div class="stat-val">${fL(tL)}</div><div class="stat-lbl">Total litros</div></div>
+    <div class="stat-box gold"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><circle cx="50" cy="50" r="40" fill="#fef3c7" stroke="#b45309" stroke-width="6"/><path d="M45,35 L45,65 L55,65 C62,65 62,35 55,35 Z" fill="none" stroke="#b45309" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><line x1="20" y1="20" x2="80" y2="80" stroke="#ffffff" stroke-width="15" opacity="0.4"><animateTransform attributeName="transform" type="translate" values="-80,-80; 80,80" dur="2.5s" repeatCount="indefinite"/></line></svg></div><div class="stat-val">${fR(tR)}</div><div class="stat-lbl">Receita total</div></div>
+    <div class="stat-box blue"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><g><animateTransform attributeName="transform" type="translate" values="0,0; 0,-5; 0,0" dur="2s" repeatCount="indefinite"/><polygon points="50,25 85,40 50,55 15,40" fill="#bae6fd" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/><polygon points="15,40 50,55 50,90 15,75" fill="#e0f2fe" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/><polygon points="85,40 50,55 50,90 85,75" fill="#7dd3fc" stroke="#0284c7" stroke-width="5" stroke-linejoin="round"/></g></svg></div><div class="stat-val">${cnt}</div><div class="stat-lbl">Entregas</div></div>
+    <div class="stat-box red"><div class="stat-icon"><svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><polyline points="15,85 35,60 55,70 85,25" fill="none" stroke="#7c3aed" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><animate attributeName="stroke-dasharray" values="0,200;200,0" dur="2s" repeatCount="indefinite"/></polyline><circle cx="85" cy="25" r="7" fill="#5b21b6"><animate attributeName="cy" values="25;15;25" dur="1s" repeatCount="indefinite"/></circle><path d="M10,10 L10,90 L90,90" fill="none" stroke="#333" stroke-width="5" stroke-linecap="round"/></svg></div><div class="stat-val">${fL(avg)}</div><div class="stat-lbl">Média/entrega</div></div>`;
+  const months=getLast12Months(allRecords);
+  const maxL=Math.max(...months.map(m=>m.liters),1),maxR=Math.max(...months.map(m=>m.money),1);
+  document.getElementById('relChartL').innerHTML=months.map(m=>`
+    <div class="bar-row"><span class="bar-label">${m.label}</span><div class="bar-track"><div class="bar-fill bar-green" style="width:${(m.liters/maxL*100).toFixed(1)}%"></div></div><span class="bar-value">${fL(m.liters)}</span></div>`).join('');
+  document.getElementById('relChartR').innerHTML=months.map(m=>`
+    <div class="bar-row"><span class="bar-label">${m.label}</span><div class="bar-track"><div class="bar-fill bar-gold" style="width:${(m.money/maxR*100).toFixed(1)}%"></div></div><span class="bar-value">${fR(m.money)}</span></div>`).join('');
+}
+
+// ─── LIXEIRA ───
+function renderLixeira(filter=''){
+  const list=allDeleted.filter(r=>!filter||(r.person||'').toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('lixeiraCount').textContent=list.length+' registro'+(list.length!==1?'s':'');
+  if(list.length===0){
+    document.getElementById('lixeiraList').innerHTML='<div class="empty">✅ Lixeira vazia</div>';
+    return;
+  }
+  document.getElementById('lixeiraList').innerHTML=list.map(r=>{
+    const profile=allProfiles.find(p=>p.id===r.user_id);
+    const userName=profile?.name||profile?.email||'Usuário desconhecido';
+    const deletedDate=r.deleted_at?new Date(r.deleted_at).toLocaleDateString('pt-BR'):'—';
+    return `<div class="rec-card" style="border-left:3px solid var(--red)">
+      <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">🗑️ Apagado em ${deletedDate} · 👤 ${esc(userName)}</div>
+      <div class="rec-name">${esc(r.person)}</div>
+      <div class="rec-meta">
+        <span class="badge badge-green">🥛 ${fL(r.quantity)}</span>
+        ${r.price>0?'<span class="badge badge-gold">💰 '+fR(r.quantity*r.price)+'</span>':''}
+        <span style="color:var(--muted);font-size:11px;font-family:'DM Mono',monospace">📅 ${fDate(r.date)}</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn-restore" data-action="restore" data-id="${r.id}">♻️ Restaurar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function restoreRecord(id){
+  if(!confirm('Restaurar este registro?'))return;
+  try{
+    const{doc,updateDoc}=window.fbFns;
+    await updateDoc(doc(window.db,'entregas',id),{deleted_at:null});
+  }catch(e){toast('⚠️ Erro ao restaurar.');return;}
+  await logAction('restaurar_registro',id);
+  const rec=allDeleted.find(r=>r.id===id);
+  if(rec){allDeleted=allDeleted.filter(r=>r.id!==id);allRecords.unshift(rec);}
+  renderLixeira();
+  toast('Registro restaurado! ♻️','success');
+}
+
+async function restoreAll(){
+  if(allDeleted.length===0){toast('Lixeira já está vazia!');return;}
+  if(!confirm('Restaurar TODOS os '+allDeleted.length+' registros apagados?'))return;
+  try{
+    const{writeBatch,doc}=window.fbFns;
+    const batch=writeBatch(window.db);
+    allDeleted.forEach(r=>batch.update(doc(window.db,'entregas',r.id),{deleted_at:null}));
+    await batch.commit();
+  }catch(e){toast('⚠️ Erro ao restaurar.');return;}
+  await logAction('restaurar_todos',null,'quantidade: '+ids.length);
+  allRecords=[...allRecords,...allDeleted];
+  allDeleted=[];
+  renderLixeira();
+  renderDashboard();
+  toast('Todos restaurados! ♻️','success');
+}
+
+// ─── REGISTROS POR USUÁRIO ───
+function renderRegistrosPorUsuario(filter=''){
+  const search=(document.getElementById('searchRegistros')?.value||'').toLowerCase();
+  document.getElementById('btnViewPorUsuario').style.display='none';
+  document.getElementById('btnViewTodos').style.display='';
+  
+  // Group records by user
+  const byUser={};
+  allRecords.forEach(r=>{
+    if(!byUser[r.user_id]) byUser[r.user_id]=[];
+    byUser[r.user_id].push(r);
+  });
+  
+  const wrapper=document.getElementById('registrosWrapper');
+  if(Object.keys(byUser).length===0){wrapper.innerHTML='<div class="empty">Nenhum registro</div>';return;}
+  
+  wrapper.innerHTML=Object.entries(byUser).map(([userId,recs])=>{
+    const profile=allProfiles.find(p=>p.id===userId);
+    const userName=profile?.name||profile?.email||'Usuário desconhecido';
+    const filtered=search?recs.filter(r=>r.person.toLowerCase().includes(search)):recs;
+    if(filtered.length===0)return '';
+    const tL=filtered.reduce((s,r)=>s+r.quantity,0);
+    const tR=filtered.reduce((s,r)=>s+r.quantity*(r.price||0),0);
+    return `<div class="section-card" style="margin-bottom:14px">
+      <div class="section-hdr" style="background:var(--card)">
+        <div>
+          <span class="section-title">👤 ${esc(userName)}</span>
+          ${profile?.custom_id?'<span style="font-size:10px;color:var(--muted);font-family:DM Mono,monospace;margin-left:8px">'+esc(profile.custom_id)+'</span>':''}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span class="badge badge-blue">📦 ${filtered.length}</span>
+          <span class="badge badge-green">🥛 ${fL(tL)}</span>
+          ${tR>0?'<span class="badge badge-gold">💰 '+fR(tR)+'</span>':''}
+        </div>
+      </div>
+      ${filtered.map(r=>`
+        <div class="rec-card" style="border-radius:0;border-bottom:1px solid var(--border);padding:12px 16px;margin:0">
+          <div class="rec-name">${esc(r.person)}</div>
+          <div class="rec-meta">
+            <span class="badge badge-green">🥛 ${fL(r.quantity)}</span>
+            ${r.price>0?'<span class="badge badge-gold">💰 '+fR(r.quantity*r.price)+'</span>':''}
+            <span style="color:var(--muted);font-size:11px;font-family:DM Mono,monospace">📅 ${fDate(r.date)}</span>
+          </div>
+          <button class="btn btn-del" style="margin-top:8px" data-action="delete" data-id="${r.id}" data-fromdetail="false">🗑 Apagar</button>
+        </div>`).join('')}
+    </div>`;
+  }).filter(Boolean).join('');
+  
+  const total=allRecords.filter(r=>!search||r.person.toLowerCase().includes(search));
+  document.getElementById('registrosCount').textContent=total.length+' registro'+(total.length!==1?'s':'');
+}
+
+// ─── INATIVIDADE ───
+let inactivityTimer;
+function resetInactivityTimer(){
+  clearTimeout(inactivityTimer);
+  inactivityTimer=setTimeout(async()=>{
+    await window.fbFns.signOut(window.auth);
+    showAuth('Sessão encerrada por inatividade.');
+  },15*60*1000);
+}
+['click','touchstart','keydown'].forEach(e=>document.addEventListener(e,resetInactivityTimer,true));
+
+// ─── UTILS ───
+const fL=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' L';
+const fR=n=>'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=t=>{const d=document.createElement('div');d.textContent=t;return d.innerHTML;};
+const fDate=s=>{if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('pt-BR');};
+
+function getLast12Months(records){
+  const mn=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],r=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date();d.setMonth(d.getMonth()-i);
+    const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const recs=records.filter(r=>r.date.startsWith(ym));
+    r.push({label:mn[d.getMonth()],liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)});
+  }
+  return r;
+}
+
+function toast(msg,type='default'){
+  const el=document.getElementById('toast');
+  if(type==='success'){
+    el.innerHTML=`<div class="toast-inner"><svg class="check-svg" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg"><circle class="check-circle" cx="26" cy="26" r="25" fill="none" stroke="#22c55e" stroke-width="4"/><path class="check-path" fill="none" stroke="#22c55e" stroke-width="4" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg><span>${msg}</span></div>`;
+  } else { el.textContent=msg; }
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2800);
+}
+</script>
+</body>
+</html>
