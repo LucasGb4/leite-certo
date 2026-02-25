@@ -546,13 +546,21 @@
       const btn = document.getElementById('btnLoginSubmit');
       if(btn) btn.classList.add('loading');
       try {
+        if (!window.auth || !window.fbFns) {
+          showAuthAlert('Aguarde, conectando...','error');
+          if(btn) btn.classList.remove('loading');
+          return;
+        }
         const { signInWithEmailAndPassword } = window.fbFns;
         await signInWithEmailAndPassword(window.auth, email, pass);
       } catch(e) {
         if(btn) btn.classList.remove('loading');
-        const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-          ? 'E-mail ou senha incorretos.'
-          : 'Erro ao conectar. Tente novamente.';
+        console.error('Firebase error:', e.code, e.message);
+        let msg = 'Erro ao conectar. Tente novamente.';
+        if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') msg = 'E-mail ou senha incorretos.';
+        else if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
+        else if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
+        else msg = 'Erro: ' + (e.code || e.message);
         showAuthAlert(msg,'error');
       }
     }
@@ -586,7 +594,8 @@
         await sendPasswordResetEmail(window.auth, email);
         showAuthAlert('E-mail enviado! Verifique sua caixa de entrada.','success');
       } catch(e) {
-        showAuthAlert('Não foi possível enviar. Verifique o e-mail.','error');
+        console.error('Forgot password error:', e.code, e.message);
+        showAuthAlert('Erro: ' + (e.code || 'Tente novamente.'), 'error');
       }
     }
 
