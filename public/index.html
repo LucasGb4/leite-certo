@@ -260,218 +260,12 @@
 </head>
 <body>
 
-<!-- LOADING -->
-<div id="pageTransition"><div class="transition-logo">🐄</div></div>
-<div id="offlineBanner">📵 Você está offline. Verifique a conexão.</div>
-
-<div id="loading">
-  <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <path d="M50,15 C50,15 25,55 25,70 A25,25 0 0,0 75,70 C75,55 50,15 50,15 Z" fill="#ffffff">
-      <animateTransform attributeName="transform" type="translate" values="0,0; 0,-15; 0,0" dur="1.2s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="1;0.8;1" dur="1.2s" repeatCount="indefinite"/>
-    </path>
-    <ellipse cx="50" cy="92" rx="20" ry="4" fill="#000000" opacity="0.15">
-      <animate attributeName="rx" values="20;12;20" dur="1.2s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.15;0.05;0.15" dur="1.2s" repeatCount="indefinite"/>
-    </ellipse>
-  </svg>
-  <p>Carregando Leite Certo…</p>
-</div>
-
-<!-- AUTH -->
-<div id="authScreen">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <span class="cow">🐄</span>
-      <h1>Leite Certo</h1>
-      <p>Gerenciador de Entregas de Leite</p>
-    </div>
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuth('login')">Entrar</button>
-      <button class="auth-tab" onclick="switchAuth('signup')">Criar conta</button>
-    </div>
-    <div id="authAlert" class="alert"></div>
-
-    <!-- LOGIN -->
-    <div id="loginForm">
-      <div class="form-group">
-        <label class="form-label">E-mail</label>
-        <input type="email" id="loginEmail" class="form-input" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Senha</label>
-        <input type="password" id="loginPass" class="form-input" placeholder="Sua senha" onkeydown="if(event.key==='Enter')doLogin()"/>
-      </div>
-      <div class="forgot-link"><a href="#" onclick="switchAuth('forgot');return false">Esqueci minha senha</a></div>
-      <button class="btn btn-primary" id="btnLoginSubmit" onclick="doLogin()">
-  <svg class="btn-spinner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="200" stroke-dashoffset="50" stroke-linecap="round"/></svg>
-  <span class="btn-text">Entrar →</span>
-</button>
-    </div>
-
-    <!-- SIGNUP -->
-    <div id="signupForm" style="display:none">
-      <div class="form-group">
-        <label class="form-label">Seu nome *</label>
-        <input type="text" id="signupName" class="form-input" placeholder="Como você se chama" maxlength="100"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Telefone (opcional)</label>
-        <input type="tel" id="signupPhone" class="form-input" placeholder="(00) 00000-0000" maxlength="20"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">E-mail *</label>
-        <input type="email" id="signupEmail" class="form-input" placeholder="seu@email.com"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Senha *</label>
-        <input type="password" id="signupPass" class="form-input" placeholder="Mínimo 6 caracteres"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Confirmar senha *</label>
-        <input type="password" id="signupConfirm" class="form-input" placeholder="Repita a senha"/>
-      </div>
-      <button class="btn btn-primary" onclick="doSignup()">Criar conta →</button>
-    </div>
-
-    <!-- FORGOT -->
-    <div id="forgotForm" style="display:none">
-      <p style="color:var(--muted);font-size:14px;margin-bottom:16px;line-height:1.6">Digite seu e-mail e enviaremos um link para você criar uma nova senha.</p>
-      <div class="form-group">
-        <label class="form-label">E-mail</label>
-        <input type="email" id="forgotEmail" class="form-input" placeholder="seu@email.com"/>
-      </div>
-      <button class="btn btn-primary" onclick="doForgot()">Enviar link →</button>
-      <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="switchAuth('login')">← Voltar</button>
-    </div>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="app">
-  <div class="header">
-    <div class="header-top">
-      <div class="header-logo">
-        <span>🐄</span>
-        <h1>Leite Certo</h1>
-      </div>
-      <div class="header-right">
-        <div class="user-avatar" id="userAvatar">?</div>
-        <button class="btn-logout" onclick="doLogout()">Sair</button>
-      </div>
-    </div>
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="switchTab('registros')">
-        <span class="nav-icon">📋</span>Registros
-      </button>
-      <button class="nav-tab" onclick="switchTab('relatorios')">
-        <span class="nav-icon">📊</span>Relatórios
-      </button>
-      <button class="nav-tab" onclick="switchTab('bot')">
-        <span class="nav-icon">💬</span>Assistente
-      </button>
-    </div>
-  </div>
-
-  <div class="content">
-    <div id="appAlert" class="alert"></div>
-
-    <!-- REGISTROS -->
-    <div id="tab-registros" class="tab-content active">
-      <div class="records-toolbar">
-        <input class="search-input" placeholder="🔍 Buscar por nome…" id="searchInput" oninput="renderRecords()"/>
-        <select class="filter-select" id="monthFilter" onchange="renderRecords()">
-          <option value="">Todos os meses</option>
-        </select>
-      </div>
-      <div id="summaryBar" class="summary-bar" style="display:none"></div>
-      <div id="recordsList"></div>
-    </div>
-
-    <!-- RELATORIOS -->
-    <div id="tab-relatorios" class="tab-content">
-      <div class="period-selector">
-        <button class="period-btn active" onclick="setPeriod('dia')">Dia</button>
-        <button class="period-btn" onclick="setPeriod('semana')">Semana</button>
-        <button class="period-btn" onclick="setPeriod('mes')">Mês</button>
-        <button class="period-btn" onclick="setPeriod('ano')">Ano</button>
-      </div>
-      <div class="date-nav">
-        <button class="date-nav-btn" onclick="navDate(-1)">‹</button>
-        <span class="date-nav-label" id="dateLabel">—</span>
-        <button class="date-nav-btn" onclick="navDate(1)">›</button>
-      </div>
-      <div class="stats-grid" id="reportStats"></div>
-      <div class="chart-section">
-        <div class="chart-header">
-          <span class="chart-title" id="chartTitle">Produção</span>
-          <div class="chart-toggle">
-            <button class="chart-toggle-btn active" id="togL" onclick="setChartMode('liters')">🥛 Litros</button>
-            <button class="chart-toggle-btn" id="togM" onclick="setChartMode('money')">💰 Receita</button>
-          </div>
-        </div>
-        <div class="chart-bars" id="chartBars"></div>
-      </div>
-      <div class="ranking-section">
-        <div class="ranking-header">🏆 Ranking de Clientes</div>
-        <div id="rankingList"></div>
-      </div>
-    </div>
-
-    <!-- BOT -->
-    <div id="tab-bot" class="tab-content">
-      <div class="bot-wrap">
-        <div class="bot-messages" id="botMessages"></div>
-        <div class="bot-suggests" id="botSuggests"></div>
-        <div class="bot-input-row">
-          <input class="bot-input" id="botInput" placeholder="Faça uma pergunta…" onkeydown="if(event.key==='Enter')sendBot()"/>
-          <button class="btn-send" onclick="sendBot()"><svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><g><animateTransform attributeName="transform" type="translate" values="0,0; 4,-4; 0,0" dur="2s" repeatCount="indefinite"/><path d="M10,50 L90,10 L50,90 L40,60 Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><line x1="90" y1="10" x2="40" y2="60" stroke="currentColor" stroke-width="8"/></g></svg></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <button class="fab" id="fab" onclick="openAddModal()">+</button>
-</div>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modalTitle">Nova Entrega</div>
-    <div class="form-group">
-      <label class="form-label">Entregue para *</label>
-      <input type="text" id="fPerson" class="form-input" placeholder="Nome do cliente ou mini fábrica"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Quantidade em Litros *</label>
-      <input type="number" id="fQty" class="form-input" placeholder="Ex: 50" min="0.1" step="0.1"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Preço por Litro R$ (opcional)</label>
-      <input type="text" inputmode="numeric" id="fPrice" class="form-input" placeholder="Ex: 4,50"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Data da Entrega *</label>
-      <input type="date" id="fDate" class="form-input"/>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" style="width:auto" onclick="saveRecord()">💾 Salvar</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, getDocs, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-
-const app = initializeApp({
+<!-- FALLBACK: se Firebase nao carregar em 3s, mostra login -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
   apiKey: "AIzaSyC3V00Qj405tjwCt7Ec9JSYVQ6-otl06XE",
   authDomain: "leite-certo-e92dd.firebaseapp.com",
   projectId: "leite-certo-e92dd",
@@ -479,47 +273,39 @@ const app = initializeApp({
   messagingSenderId: "375379213395",
   appId: "1:375379213395:web:e09d6815dba946471fdaa6"
 });
-const auth = getAuth(app);
-const db = getFirestore(app);
+var auth = firebase.auth();
+var db = firebase.firestore();
 
-// Expose functions called from HTML onclick
-const w = window;
+var records = [], editingId = null, period = 'mes', dateRef = new Date(), chartMode = 'liters', botMsgs = [];
+var SUGGESTS = ['total de litros','receita total','entregas de hoje','resumo da semana','resumo do mes','quem recebeu mais'];
 
-let records = [], editingId = null, period = 'mes', dateRef = new Date(), chartMode = 'liters', botMsgs = [];
-const SUGGESTS = ['total de litros','receita total','entregas de hoje','resumo da semana','resumo do mes','quem recebeu mais'];
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
 
-// BOOT
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-
-// Fallback: if auth never responds in 8s, show login
-const loadingTimeout = setTimeout(() => hideLoading(), 8000);
-
-onAuthStateChanged(auth, async (user) => {
-  clearTimeout(loadingTimeout);
+firebase.auth().onAuthStateChanged(function(user) {
   hideLoading();
-  if (user) await startApp(user);
+  if (user) startApp(user);
   else showAuth();
 });
 
 function hideLoading() {
-  const l = document.getElementById('loading');
-  if (!l) return;
+  var l = document.getElementById('loading');
   l.style.opacity = '0';
-  setTimeout(() => { l.style.display = 'none'; }, 400);
+  setTimeout(function() { l.style.display = 'none'; }, 400);
 }
 
-async function startApp(user) {
-  const tr = document.getElementById('pageTransition');
+function startApp(user) {
+  var tr = document.getElementById('pageTransition');
   tr.classList.add('active');
-  await loadRecords();
-  setTimeout(() => {
-    document.getElementById('authScreen').classList.remove('active');
-    document.getElementById('app').classList.add('active');
-    document.getElementById('userAvatar').textContent = (user.email || '?')[0].toUpperCase();
-    initBot();
-    updateReports();
-    setTimeout(() => tr.classList.remove('active'), 400);
-  }, 600);
+  loadRecords().then(function() {
+    setTimeout(function() {
+      document.getElementById('authScreen').classList.remove('active');
+      document.getElementById('app').classList.add('active');
+      document.getElementById('userAvatar').textContent = (user.email || '?')[0].toUpperCase();
+      initBot();
+      updateReports();
+      setTimeout(function() { tr.classList.remove('active'); }, 400);
+    }, 600);
+  });
 }
 
 function showAuth() {
@@ -528,174 +314,159 @@ function showAuth() {
   records = [];
 }
 
-// AUTH - exposed to window for onclick
-w.switchAuth = (tab) => {
-  ['loginForm','signupForm','forgotForm'].forEach(id => document.getElementById(id).style.display = 'none');
+function switchAuth(tab) {
+  ['loginForm','signupForm','forgotForm'].forEach(function(id) { document.getElementById(id).style.display = 'none'; });
   if (tab === 'forgot') document.getElementById('forgotForm').style.display = 'block';
   else if (tab === 'signup') document.getElementById('signupForm').style.display = 'block';
   else document.getElementById('loginForm').style.display = 'block';
-  document.querySelectorAll('.auth-tab').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='signup')));
+  document.querySelectorAll('.auth-tab').forEach(function(b,i) { b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='signup')); });
   document.getElementById('authAlert').className = 'alert';
-};
+}
 
-w.doLogin = async () => {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
+function doLogin() {
+  var email = document.getElementById('loginEmail').value.trim();
+  var pass = document.getElementById('loginPass').value;
   if (!email || !pass) { showAuthAlert('Preencha e-mail e senha.', 'error'); return; }
-  const btn = document.getElementById('btnLoginSubmit');
+  var btn = document.getElementById('btnLoginSubmit');
   if (btn) btn.classList.add('loading');
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-  } catch(e) {
+  auth.signInWithEmailAndPassword(email, pass).catch(function(e) {
     if (btn) btn.classList.remove('loading');
     console.error('Login error:', e.code, e.message);
-    const codes = ['auth/invalid-credential','auth/wrong-password','auth/user-not-found'];
-    if (codes.includes(e.code)) showAuthAlert('E-mail ou senha incorretos.', 'error');
-    else if (e.code === 'auth/too-many-requests') showAuthAlert('Muitas tentativas. Aguarde.', 'error');
-    else showAuthAlert('Erro: ' + e.code, 'error');
-  }
-};
+    if (['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(e.code))
+      showAuthAlert('E-mail ou senha incorretos.', 'error');
+    else if (e.code === 'auth/too-many-requests')
+      showAuthAlert('Muitas tentativas. Aguarde.', 'error');
+    else
+      showAuthAlert('Erro: ' + e.code, 'error');
+  });
+}
 
-w.doSignup = async () => {
-  const name = document.getElementById('signupName').value.trim();
-  const email = document.getElementById('signupEmail').value.trim();
-  const pass = document.getElementById('signupPass').value;
-  const confirm = document.getElementById('signupConfirm').value;
+function doSignup() {
+  var name = document.getElementById('signupName').value.trim();
+  var email = document.getElementById('signupEmail').value.trim();
+  var pass = document.getElementById('signupPass').value;
+  var confirm = document.getElementById('signupConfirm').value;
   if (!name) { showAuthAlert('Digite seu nome.', 'error'); return; }
   if (!email || !pass) { showAuthAlert('Preencha todos os campos.', 'error'); return; }
   if (pass.length < 6) { showAuthAlert('Senha minimo 6 caracteres.', 'error'); return; }
   if (pass !== confirm) { showAuthAlert('As senhas nao coincidem.', 'error'); return; }
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    await addDoc(collection(db, 'profiles'), { uid: cred.user.uid, name, email, created_at: new Date().toISOString() });
+  auth.createUserWithEmailAndPassword(email, pass).then(function(cred) {
+    return db.collection('profiles').add({ uid: cred.user.uid, name: name, email: email, created_at: new Date().toISOString() });
+  }).then(function() {
     showAuthAlert('Conta criada! Entrando...', 'success');
-  } catch(e) {
+  }).catch(function(e) {
     console.error('Signup error:', e.code, e.message);
     showAuthAlert('Erro: ' + e.code, 'error');
-  }
-};
+  });
+}
 
-w.doForgot = async () => {
-  const email = document.getElementById('forgotEmail').value.trim();
+function doForgot() {
+  var email = document.getElementById('forgotEmail').value.trim();
   if (!email) { showAuthAlert('Digite seu e-mail.', 'error'); return; }
-  try {
-    await sendPasswordResetEmail(auth, email);
+  auth.sendPasswordResetEmail(email).then(function() {
     showAuthAlert('E-mail enviado! Verifique sua caixa.', 'success');
-  } catch(e) {
-    console.error('Forgot error:', e.code, e.message);
+  }).catch(function(e) {
     showAuthAlert('Erro: ' + e.code, 'error');
-  }
-};
+  });
+}
 
-w.doLogout = async () => {
+function doLogout() {
   if (!confirm('Sair do app?')) return;
-  await signOut(auth);
-};
+  auth.signOut();
+}
 
 function showAuthAlert(msg, type) {
-  const el = document.getElementById('authAlert');
+  var el = document.getElementById('authAlert');
   el.textContent = msg;
   el.className = 'alert alert-' + type + ' show';
 }
 
-// RECORDS
-async function loadRecords() {
-  const user = auth.currentUser;
-  if (!user) return;
-  try {
-    const q = query(collection(db,'entregas'), where('user_id','==',user.uid), where('deleted_at','==',null), orderBy('date','desc'));
-    const snap = await getDocs(q);
-    records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(e) {
-    console.error('loadRecords error:', e.code, e.message);
-    records = [];
-  }
-  renderRecords();
-  populateMonthFilter();
+function loadRecords() {
+  var user = auth.currentUser;
+  if (!user) return Promise.resolve();
+  return db.collection('entregas')
+    .where('user_id','==',user.uid)
+    .where('deleted_at','==',null)
+    .orderBy('date','desc')
+    .get()
+    .then(function(snap) {
+      records = snap.docs.map(function(d) { return Object.assign({id:d.id}, d.data()); });
+      renderRecords();
+      populateMonthFilter();
+    }).catch(function(e) {
+      console.error('loadRecords:', e.code, e.message);
+      records = [];
+      renderRecords();
+    });
 }
 
-w.saveRecord = async () => {
-  const person = document.getElementById('fPerson').value.trim();
-  const qty = parseFloat(document.getElementById('fQty').value);
-  const price = parseFloat(document.getElementById('fPrice').value.replace(',','.')) || 0;
-  const date = document.getElementById('fDate').value;
+function saveRecord() {
+  var person = document.getElementById('fPerson').value.trim();
+  var qty = parseFloat(document.getElementById('fQty').value);
+  var price = parseFloat(document.getElementById('fPrice').value.replace(',','.')) || 0;
+  var date = document.getElementById('fDate').value;
   if (!person || !qty || !date) { toast('Preencha os campos obrigatorios!'); return; }
   if (qty <= 0) { toast('Quantidade deve ser maior que zero.'); return; }
-  const saveBtn = document.querySelector('.modal-actions .btn-primary');
+  var saveBtn = document.querySelector('.modal-actions .btn-primary');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
-  try {
-    const user = auth.currentUser;
-    if (!user) { toast('Sessao expirada. Faca login novamente.'); return; }
-    if (editingId) {
-      await updateDoc(doc(db,'entregas',editingId), { person, quantity:qty, price, date });
-      toast('Registro atualizado!');
-    } else {
-      await addDoc(collection(db,'entregas'), { user_id:user.uid, person, quantity:qty, price, date, deleted_at:null, created_at:new Date().toISOString() });
-      toast('Entrega registrada!');
-    }
+  var user = auth.currentUser;
+  if (!user) { toast('Sessao expirada.'); return; }
+  var promise;
+  if (editingId) {
+    promise = db.collection('entregas').doc(editingId).update({ person:person, quantity:qty, price:price, date:date });
+  } else {
+    promise = db.collection('entregas').add({ user_id:user.uid, person:person, quantity:qty, price:price, date:date, deleted_at:null, created_at:new Date().toISOString() });
+  }
+  promise.then(function() {
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
-    w.closeModal();
-    await loadRecords();
-    updateReports();
-  } catch(e) {
-    console.error('saveRecord error:', e);
+    toast(editingId ? 'Registro atualizado!' : 'Entrega registrada!');
+    closeModal();
+    loadRecords().then(updateReports);
+  }).catch(function(e) {
+    console.error('saveRecord:', e);
     toast('Erro ao salvar: ' + e.code);
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
-  }
-};
+  });
+}
 
-w.deleteRecord = async (id) => {
+function deleteRecord(id) {
   if (!confirm('Apagar este registro?')) return;
-  records = records.filter(r => r.id !== id);
+  records = records.filter(function(r) { return r.id !== id; });
   renderRecords();
   updateReports();
   toast('Registro apagado.');
-  try { await updateDoc(doc(db,'entregas',id), { deleted_at: new Date().toISOString() }); } catch(e) {}
-};
+  db.collection('entregas').doc(id).update({ deleted_at: new Date().toISOString() }).catch(function(e){});
+}
 
-// RENDER
 function renderRecords() {
-  const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
-  const month = document.getElementById('monthFilter')?.value || '';
-  const list = records.filter(r => r.person.toLowerCase().includes(search) && (month ? r.date.startsWith(month) : true));
-  const tL = list.reduce((s,r) => s+r.quantity, 0);
-  const tR = list.reduce((s,r) => s+r.quantity*(r.price||0), 0);
-  const bar = document.getElementById('summaryBar');
+  var search = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').toLowerCase();
+  var month = document.getElementById('monthFilter') ? document.getElementById('monthFilter').value : '';
+  var list = records.filter(function(r) { return r.person.toLowerCase().includes(search) && (month ? r.date.startsWith(month) : true); });
+  var tL = list.reduce(function(s,r){return s+r.quantity;},0);
+  var tR = list.reduce(function(s,r){return s+r.quantity*(r.price||0);},0);
+  var bar = document.getElementById('summaryBar');
   if (list.length > 0) {
     bar.style.display = 'flex';
-    bar.innerHTML = '<span>Entregas: ' + list.length + '</span><span>Litros: ' + fL(tL) + '</span>' + (tR>0 ? '<span>Receita: ' + fR(tR) + '</span>' : '');
+    bar.innerHTML = '<span>📦 '+list.length+' entrega'+(list.length!==1?'s':'')+'</span><span>🥛 '+fL(tL)+'</span>'+(tR>0?'<span>💰 '+fR(tR)+'</span>':'');
   } else { bar.style.display = 'none'; }
-  const el = document.getElementById('recordsList');
+  var el = document.getElementById('recordsList');
   if (list.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🥛</div><p>' + (search||month ? 'Nenhum resultado.' : 'Nenhum registro ainda. Toque no + para adicionar!') + '</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🥛</div><p>'+(search||month?'Nenhum resultado.':'Nenhum registro ainda. Toque no + para adicionar!')+'</p></div>';
     return;
   }
-  el.innerHTML = list.map(r => `
-    <div class="record-card" data-id="${r.id}">
-      <div class="record-info">
-        <div class="record-name">${esc(r.person)}</div>
-        <div class="record-meta">
-          <span class="liters">🥛 ${fL(r.quantity)}</span>
-          <span>📅 ${fDate(r.date)}</span>
-          ${r.price>0 ? '<span class="money">💰 ' + fR(r.quantity*r.price) + '</span>' : ''}
-        </div>
-      </div>
-      <div class="record-actions">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal('${r.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteRecord('${r.id}')">🗑️</button>
-      </div>
-    </div>`).join('');
+  el.innerHTML = list.map(function(r) {
+    return '<div class="record-card" data-id="'+r.id+'"><div class="record-info"><div class="record-name">'+esc(r.person)+'</div><div class="record-meta"><span class="liters">🥛 '+fL(r.quantity)+'</span><span>📅 '+fDate(r.date)+'</span>'+(r.price>0?'<span class="money">💰 '+fR(r.quantity*r.price)+'</span>':'')+'</div></div><div class="record-actions"><button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal(''+r.id+'')">✏️</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteRecord(''+r.id+'')">🗑️</button></div></div>';
+  }).join('');
 }
 
 function populateMonthFilter() {
-  const months = [...new Set(records.map(r => r.date.slice(0,7)))].sort().reverse();
-  const sel = document.getElementById('monthFilter');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">Todos os meses</option>' + months.map(m => `<option value="${m}"${m===cur?' selected':''}>${fMonth(m)}</option>`).join('');
+  var months = records.map(function(r){return r.date.slice(0,7);}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort().reverse();
+  var sel = document.getElementById('monthFilter');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">Todos os meses</option>' + months.map(function(m){return '<option value="'+m+'"'+(m===cur?' selected':'')+'>'+fMonth(m)+'</option>';}).join('');
 }
 
-// MODAL
-w.openAddModal = () => {
+function openAddModal() {
   editingId = null;
   document.getElementById('modalTitle').textContent = 'Nova Entrega';
   document.getElementById('fPerson').value = '';
@@ -703,10 +474,10 @@ w.openAddModal = () => {
   document.getElementById('fPrice').value = '';
   document.getElementById('fDate').value = todayStr();
   document.getElementById('modalOverlay').classList.add('active');
-};
+}
 
-w.openEditModal = (id) => {
-  const r = records.find(r => r.id === id);
+function openEditModal(id) {
+  var r = records.find(function(r){return r.id===id;});
   if (!r) return;
   editingId = id;
   document.getElementById('modalTitle').textContent = 'Editar Entrega';
@@ -715,145 +486,137 @@ w.openEditModal = (id) => {
   document.getElementById('fPrice').value = r.price || '';
   document.getElementById('fDate').value = r.date;
   document.getElementById('modalOverlay').classList.add('active');
-};
+}
 
-w.closeModal = () => {
+function closeModal() {
   document.getElementById('modalOverlay').classList.remove('active');
   editingId = null;
-};
+}
 
-// TABS
-w.switchTab = (name) => {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.nav-tab').forEach(function(el){el.classList.remove('active');});
+  document.getElementById('tab-'+name).classList.add('active');
   document.querySelectorAll('.nav-tab')[['registros','relatorios','bot'].indexOf(name)].classList.add('active');
-  document.getElementById('fab').style.display = name === 'bot' ? 'none' : 'flex';
-  if (name === 'relatorios') updateReports();
-};
+  document.getElementById('fab').style.display = name==='bot'?'none':'flex';
+  if (name==='relatorios') updateReports();
+}
 
-// REPORTS
-w.setPeriod = (p) => { period=p; dateRef=new Date(); document.querySelectorAll('.period-btn').forEach((b,i)=>b.classList.toggle('active',['dia','semana','mes','ano'][i]===p)); updateReports(); };
-w.navDate = (dir) => { if(period==='dia') dateRef.setDate(dateRef.getDate()+dir); else if(period==='semana') dateRef.setDate(dateRef.getDate()+dir*7); else if(period==='mes') dateRef.setMonth(dateRef.getMonth()+dir); else dateRef.setFullYear(dateRef.getFullYear()+dir); updateReports(); };
-w.setChartMode = (m) => { chartMode=m; document.getElementById('togL').classList.toggle('active',m==='liters'); document.getElementById('togM').classList.toggle('active',m==='money'); updateReports(); };
+function setPeriod(p) { period=p; dateRef=new Date(); document.querySelectorAll('.period-btn').forEach(function(b,i){b.classList.toggle('active',['dia','semana','mes','ano'][i]===p);}); updateReports(); }
+function navDate(dir) { if(period==='dia') dateRef.setDate(dateRef.getDate()+dir); else if(period==='semana') dateRef.setDate(dateRef.getDate()+dir*7); else if(period==='mes') dateRef.setMonth(dateRef.getMonth()+dir); else dateRef.setFullYear(dateRef.getFullYear()+dir); updateReports(); }
+function setChartMode(m) { chartMode=m; document.getElementById('togL').classList.toggle('active',m==='liters'); document.getElementById('togM').classList.toggle('active',m==='money'); updateReports(); }
 
 function updateReports() {
-  const { filtered, label, bars, ranking } = getReportData();
-  document.getElementById('dateLabel').textContent = label;
-  const tL = filtered.reduce((s,r)=>s+r.quantity,0), tR = filtered.reduce((s,r)=>s+r.quantity*(r.price||0),0), cnt = filtered.length, avg = cnt?tL/cnt:0;
+  var data = getReportData();
+  document.getElementById('dateLabel').textContent = data.label;
+  var tL=data.filtered.reduce(function(s,r){return s+r.quantity;},0), tR=data.filtered.reduce(function(s,r){return s+r.quantity*(r.price||0);},0), cnt=data.filtered.length, avg=cnt?tL/cnt:0;
   document.getElementById('reportStats').innerHTML =
-    '<div class="stat-card liters"><div class="stat-icon">🥛</div><div class="stat-value">' + fL(tL) + '</div><div class="stat-label">Litros entregues</div></div>' +
-    '<div class="stat-card money"><div class="stat-icon">💰</div><div class="stat-value">' + fR(tR) + '</div><div class="stat-label">Dinheiro ganho</div></div>' +
-    '<div class="stat-card count"><div class="stat-icon">📦</div><div class="stat-value">' + cnt + '</div><div class="stat-label">Entregas</div></div>' +
-    '<div class="stat-card avg"><div class="stat-icon">📈</div><div class="stat-value">' + fL(avg) + '</div><div class="stat-label">Media / entrega</div></div>';
-  const maxV = Math.max(...bars.map(b => chartMode==='liters'?b.liters:b.money), 1);
-  document.getElementById('chartTitle').textContent = chartMode==='liters' ? 'Litros por periodo' : 'Receita por periodo';
-  document.getElementById('chartBars').innerHTML = bars.length === 0 ? '<div class="no-chart">Sem dados</div>' :
-    bars.map(b => { const val = chartMode==='liters'?b.liters:b.money; return '<div class="chart-bar-row"><span class="chart-bar-label">' + b.label + '</span><div class="chart-bar-track"><div class="chart-bar-fill ' + (chartMode==='liters'?'bar-liters':'bar-money') + '" style="width:' + (val/maxV*100).toFixed(1) + '%"></div></div><span class="chart-bar-value">' + (chartMode==='liters'?fL(val):fR(val)) + '</span></div>'; }).join('');
-  document.getElementById('rankingList').innerHTML = ranking.length === 0 ? '<div style="padding:20px;text-align:center;color:var(--muted)">Nenhum dado</div>' :
-    ranking.map(([name,s],i) => '<div class="ranking-item"><span class="ranking-pos">' + (['🥇','🥈','🥉'][i]||('#'+(i+1))) + '</span><div><div class="ranking-name">' + esc(name) + '</div><div class="ranking-sub">' + fL(s.liters) + ' - ' + s.count + ' entrega' + (s.count!==1?'s':'') + (s.money>0?' - '+fR(s.money):'') + '</div></div><span class="ranking-badge">' + fL(s.liters) + '</span></div>').join('');
+    '<div class="stat-card liters"><div class="stat-icon">🥛</div><div class="stat-value">'+fL(tL)+'</div><div class="stat-label">Litros entregues</div></div>'+
+    '<div class="stat-card money"><div class="stat-icon">💰</div><div class="stat-value">'+fR(tR)+'</div><div class="stat-label">Dinheiro ganho</div></div>'+
+    '<div class="stat-card count"><div class="stat-icon">📦</div><div class="stat-value">'+cnt+'</div><div class="stat-label">Entregas</div></div>'+
+    '<div class="stat-card avg"><div class="stat-icon">📈</div><div class="stat-value">'+fL(avg)+'</div><div class="stat-label">Media / entrega</div></div>';
+  var maxV=Math.max.apply(null, data.bars.map(function(b){return chartMode==='liters'?b.liters:b.money;}).concat([1]));
+  document.getElementById('chartTitle').textContent = chartMode==='liters'?'Litros por periodo':'Receita por periodo';
+  document.getElementById('chartBars').innerHTML = data.bars.length===0?'<div class="no-chart">Sem dados</div>':
+    data.bars.map(function(b){var val=chartMode==='liters'?b.liters:b.money;return '<div class="chart-bar-row"><span class="chart-bar-label">'+b.label+'</span><div class="chart-bar-track"><div class="chart-bar-fill '+(chartMode==='liters'?'bar-liters':'bar-money')+'" style="width:'+(val/maxV*100).toFixed(1)+'%"></div></div><span class="chart-bar-value">'+(chartMode==='liters'?fL(val):fR(val))+'</span></div>';}).join('');
+  document.getElementById('rankingList').innerHTML = data.ranking.length===0?'<div style="padding:20px;text-align:center;color:var(--muted)">Nenhum dado</div>':
+    data.ranking.map(function(item,i){return '<div class="ranking-item"><span class="ranking-pos">'+(['🥇','🥈','🥉'][i]||('#'+(i+1)))+'</span><div><div class="ranking-name">'+esc(item[0])+'</div><div class="ranking-sub">'+fL(item[1].liters)+' - '+item[1].count+' entrega'+(item[1].count!==1?'s':'')+(item[1].money>0?' - '+fR(item[1].money):'')+'</div></div><span class="ranking-badge">'+fL(item[1].liters)+'</span></div>';}).join('');
 }
 
 function getReportData() {
-  const d = new Date(dateRef); let filtered=[], label='', bars=[];
+  var d=new Date(dateRef), filtered=[], label='', bars=[];
   if (period==='dia') {
-    const str=toStr(d); filtered=records.filter(r=>r.date===str); label=fDate(str);
-    bars=[{label:'Hoje',liters:filtered.reduce((s,r)=>s+r.quantity,0),money:filtered.reduce((s,r)=>s+r.quantity*(r.price||0),0)}];
+    var str=toStr(d); filtered=records.filter(function(r){return r.date===str;}); label=fDate(str);
+    bars=[{label:'Hoje',liters:filtered.reduce(function(s,r){return s+r.quantity;},0),money:filtered.reduce(function(s,r){return s+r.quantity*(r.price||0);},0)}];
   } else if (period==='semana') {
-    const start=new Date(d); start.setDate(d.getDate()-d.getDay()); const end=new Date(start); end.setDate(start.getDate()+6);
-    filtered=records.filter(r=>r.date>=toStr(start)&&r.date<=toStr(end)); label=fDate(toStr(start))+' - '+fDate(toStr(end));
-    bars=['Dom','Seg','Ter','Qua','Qui','Sex','Sab'].map((lbl,i)=>{const ds=new Date(start);ds.setDate(start.getDate()+i);const str=toStr(ds);const recs=records.filter(r=>r.date===str);return{label:lbl,liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};});
+    var start=new Date(d); start.setDate(d.getDate()-d.getDay()); var end=new Date(start); end.setDate(start.getDate()+6);
+    filtered=records.filter(function(r){return r.date>=toStr(start)&&r.date<=toStr(end);}); label=fDate(toStr(start))+' - '+fDate(toStr(end));
+    bars=['Dom','Seg','Ter','Qua','Qui','Sex','Sab'].map(function(lbl,i){var ds=new Date(start);ds.setDate(start.getDate()+i);var str=toStr(ds);var recs=records.filter(function(r){return r.date===str;});return{label:lbl,liters:recs.reduce(function(s,r){return s+r.quantity;},0),money:recs.reduce(function(s,r){return s+r.quantity*(r.price||0);},0)};});
   } else if (period==='mes') {
-    const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); filtered=records.filter(r=>r.date.startsWith(ym)); label=fMonth(ym);
-    const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-    bars=Array.from({length:dim},(_,i)=>{const day=String(i+1).padStart(2,'0'),str=ym+'-'+day;const recs=records.filter(r=>r.date===str);return{label:String(i+1),liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};}).filter(b=>b.liters>0||b.money>0);
+    var ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); filtered=records.filter(function(r){return r.date.startsWith(ym);}); label=fMonth(ym);
+    var dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+    bars=Array.from({length:dim},function(_,i){var day=String(i+1).padStart(2,'0'),str=ym+'-'+day;var recs=records.filter(function(r){return r.date===str;});return{label:String(i+1),liters:recs.reduce(function(s,r){return s+r.quantity;},0),money:recs.reduce(function(s,r){return s+r.quantity*(r.price||0);},0)};}).filter(function(b){return b.liters>0||b.money>0;});
   } else {
-    const y=d.getFullYear(); filtered=records.filter(r=>r.date.startsWith(String(y))); label=String(y);
-    bars=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((lbl,i)=>{const m=String(i+1).padStart(2,'0');const recs=records.filter(r=>r.date.startsWith(y+'-'+m));return{label:lbl,liters:recs.reduce((s,r)=>s+r.quantity,0),money:recs.reduce((s,r)=>s+r.quantity*(r.price||0),0)};});
+    var y=d.getFullYear(); filtered=records.filter(function(r){return r.date.startsWith(String(y));}); label=String(y);
+    bars=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map(function(lbl,i){var m=String(i+1).padStart(2,'0');var recs=records.filter(function(r){return r.date.startsWith(y+'-'+m);});return{label:lbl,liters:recs.reduce(function(s,r){return s+r.quantity;},0),money:recs.reduce(function(s,r){return s+r.quantity*(r.price||0);},0)};});
   }
-  const byP={}; filtered.forEach(r=>{if(!byP[r.person])byP[r.person]={liters:0,money:0,count:0};byP[r.person].liters+=r.quantity;byP[r.person].money+=r.quantity*(r.price||0);byP[r.person].count+=1;});
-  return { filtered, label, bars, ranking:Object.entries(byP).sort((a,b)=>b[1].liters-a[1].liters) };
+  var byP={};
+  filtered.forEach(function(r){if(!byP[r.person])byP[r.person]={liters:0,money:0,count:0};byP[r.person].liters+=r.quantity;byP[r.person].money+=r.quantity*(r.price||0);byP[r.person].count+=1;});
+  return {filtered:filtered,label:label,bars:bars,ranking:Object.entries(byP).sort(function(a,b){return b[1].liters-a[1].liters;})};
 }
 
-// BOT
 function initBot() {
-  botMsgs = [];
-  addBotMsg('bot', 'Ola! Sou o assistente do Leite Certo. Pergunte sobre as entregas! Digite "ajuda" para ver o que sei responder.');
-  const el = document.getElementById('botSuggests');
-  el.innerHTML = '';
-  SUGGESTS.forEach(s => { const btn=document.createElement('button'); btn.className='bot-sug-btn'; btn.textContent=s; btn.onclick=()=>w.sendBot(s); el.appendChild(btn); });
+  botMsgs=[];
+  addBotMsg('bot','Ola! Sou o assistente do Leite Certo.
+
+Pergunte sobre as entregas!
+Digite "ajuda" para ver o que sei responder.');
+  var el=document.getElementById('botSuggests'); el.innerHTML='';
+  SUGGESTS.forEach(function(s){var btn=document.createElement('button');btn.className='bot-sug-btn';btn.textContent=s;btn.onclick=function(){sendBot(s);};el.appendChild(btn);});
 }
 
-w.sendBot = (text) => {
-  const input = document.getElementById('botInput');
-  const q = text || input.value.trim();
-  if (!q) return;
-  input.value = '';
-  addBotMsg('user', q);
-  setTimeout(() => addBotMsg('bot', botReply(q)), 700);
-};
+function sendBot(text) {
+  var input=document.getElementById('botInput');
+  var q=text||input.value.trim();
+  if(!q)return;
+  input.value='';
+  addBotMsg('user',q);
+  setTimeout(function(){addBotMsg('bot',botReply(q));},700);
+}
 
-function addBotMsg(from, text) {
-  botMsgs.push({from, text});
-  const el = document.getElementById('botMessages');
-  el.innerHTML = botMsgs.map(m => '<div class="bot-msg ' + m.from + '">' + (m.from==='bot'?'<div class="bot-avatar">🐄</div>':'') + '<div class="bot-bubble">' + m.text.replace(/
-/g,'<br>') + '</div></div>').join('');
-  el.scrollTop = el.scrollHeight;
+function addBotMsg(from,text) {
+  botMsgs.push({from:from,text:text});
+  var el=document.getElementById('botMessages');
+  el.innerHTML=botMsgs.map(function(m){return '<div class="bot-msg '+m.from+'">'+(m.from==='bot'?'<div class="bot-avatar">🐄</div>':'')+'<div class="bot-bubble">'+m.text.replace(/
+/g,'<br>')+'</div></div>';}).join('');
+  el.scrollTop=el.scrollHeight;
 }
 
 function botReply(msg) {
-  const m = msg.toLowerCase().trim();
-  const tL = records.reduce((s,r)=>s+r.quantity,0), tR = records.reduce((s,r)=>s+r.quantity*(r.price||0),0), cnt = records.length;
-  const td = todayStr(), todayR = records.filter(r=>r.date===td);
-  const ym = td.slice(0,7), monthR = records.filter(r=>r.date.startsWith(ym));
-  const byP = {}; records.forEach(r=>{if(!byP[r.person])byP[r.person]=0; byP[r.person]+=r.quantity;});
-  const rank = Object.entries(byP).sort((a,b)=>b[1]-a[1]);
-  if (/^(oi|ola|bom dia|boa tarde|boa noite)/.test(m)) return 'Ola! Digite "ajuda" para ver o que sei responder!';
-  if (m.includes('ajuda')) return 'Posso responder:
+  var m=msg.toLowerCase().trim();
+  var tL=records.reduce(function(s,r){return s+r.quantity;},0), tR=records.reduce(function(s,r){return s+r.quantity*(r.price||0);},0), cnt=records.length;
+  var td=todayStr(), todayR=records.filter(function(r){return r.date===td;});
+  var ym=td.slice(0,7), monthR=records.filter(function(r){return r.date.startsWith(ym);});
+  var byP={}; records.forEach(function(r){if(!byP[r.person])byP[r.person]=0;byP[r.person]+=r.quantity;});
+  var rank=Object.entries(byP).sort(function(a,b){return b[1]-a[1];});
+  if(/^(oi|ola|bom dia|boa tarde|boa noite)/.test(m))return'Ola! Digite "ajuda" para ver o que sei responder!';
+  if(m.includes('ajuda'))return'Posso responder:
 
 - "total de litros"
 - "receita total"
 - "entregas de hoje"
 - "resumo do mes"
 - "quem recebeu mais"';
-  if ((m.includes('total')||m.includes('quanto')) && m.includes('litro')) return cnt===0 ? 'Sem registros ainda.' : 'Total: ' + fL(tL) + ' em ' + cnt + ' entrega' + (cnt!==1?'s':'') + (tR>0 ? '
-Receita: ' + fR(tR) : '');
-  if (m.includes('receita') || m.includes('dinheiro')) return tR>0 ? 'Receita total: ' + fR(tR) : 'Nenhum preco cadastrado ainda.';
-  if (m.includes('hoje')) return todayR.length===0 ? 'Nenhuma entrega hoje.' : 'Hoje: ' + fL(todayR.reduce((s,r)=>s+r.quantity,0)) + ' em ' + todayR.length + ' entrega' + (todayR.length!==1?'s':'');
-  if (m.includes('mes')) return monthR.length===0 ? 'Sem entregas este mes.' : fMonth(ym) + ': ' + fL(monthR.reduce((s,r)=>s+r.quantity,0)) + ' em ' + monthR.length + ' entrega' + (monthR.length!==1?'s':'');
-  if (m.includes('recebeu mais') || m.includes('ranking')) return rank.length===0 ? 'Sem dados.' : 'Top:
+  if((m.includes('total')||m.includes('quanto'))&&m.includes('litro'))return cnt===0?'Sem registros ainda.':'Total: '+fL(tL)+' em '+cnt+' entrega'+(cnt!==1?'s':'')+(tR>0?'
+Receita: '+fR(tR):'');
+  if(m.includes('receita')||m.includes('dinheiro'))return tR>0?'Receita total: '+fR(tR):'Nenhum preco cadastrado ainda.';
+  if(m.includes('hoje'))return todayR.length===0?'Nenhuma entrega hoje.':'Hoje: '+fL(todayR.reduce(function(s,r){return s+r.quantity;},0))+' em '+todayR.length+' entrega'+(todayR.length!==1?'s':'');
+  if(m.includes('mes'))return monthR.length===0?'Sem entregas este mes.':fMonth(ym)+': '+fL(monthR.reduce(function(s,r){return s+r.quantity;},0))+' em '+monthR.length+' entrega'+(monthR.length!==1?'s':'');
+  if(m.includes('recebeu mais')||m.includes('ranking'))return rank.length===0?'Sem dados.':'Top:
 
-' + rank.slice(0,3).map(([n,l],i)=>(['1o','2o','3o'][i]||('#'+(i+1)))+' '+n+': '+fL(l)).join('
+'+rank.slice(0,3).map(function(item,i){return(['1o','2o','3o'][i]||('#'+(i+1)))+' '+item[0]+': '+fL(item[1]);}).join('
 ');
-  if (m.includes('obrigad') || m.includes('valeu')) return 'De nada!';
-  return 'Nao entendi. Digite "ajuda"!';
+  if(m.includes('obrigad')||m.includes('valeu'))return'De nada!';
+  return'Nao entendi. Digite "ajuda"!';
 }
 
-// PRICE MASK
 document.getElementById('fPrice').addEventListener('input', function(e) {
-  let v = e.target.value.replace(/[^0-9]/g, '');
-  if (v === '') { e.target.value = ''; return; }
-  e.target.value = (parseInt(v,10)/100).toFixed(2).replace('.',',');
+  var v=e.target.value.replace(/[^0-9]/g,'');
+  if(v===''){e.target.value='';return;}
+  e.target.value=(parseInt(v,10)/100).toFixed(2).replace('.',',');
 });
 
-window.addEventListener('online', () => document.getElementById('offlineBanner').classList.remove('show'));
-window.addEventListener('offline', () => document.getElementById('offlineBanner').classList.add('show'));
+window.addEventListener('online',function(){document.getElementById('offlineBanner').classList.remove('show');});
+window.addEventListener('offline',function(){document.getElementById('offlineBanner').classList.add('show');});
 
-// UTILS
-const fL = n => n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' L';
-const fR = n => 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const todayStr = () => new Date().toISOString().split('T')[0];
-const toStr = d => d.toISOString().split('T')[0];
-const esc = t => { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; };
-const fDate = s => new Date(s+'T00:00:00').toLocaleDateString('pt-BR');
-const fMonth = ym => new Date(ym+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2800);
-}
+function fL(n){return n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' L';}
+function fR(n){return'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function toStr(d){return d.toISOString().split('T')[0];}
+function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+function fDate(s){return new Date(s+'T00:00:00').toLocaleDateString('pt-BR');}
+function fMonth(ym){return new Date(ym+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});}
+function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
 </script>
 </body>
 </html>
